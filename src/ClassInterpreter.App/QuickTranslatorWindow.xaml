@@ -1,0 +1,93 @@
+<Window x:Class="ClassInterpreter.App.QuickTranslatorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="双向同传" Width="1060" Height="720" MinWidth="820" MinHeight="560"
+        WindowStartupLocation="CenterOwner" Background="#0B0C0E" Foreground="#F4F0E6"
+        ResizeMode="CanResizeWithGrip" ShowInTaskbar="False">
+    <Border BorderBrush="#6A592B" BorderThickness="1" CornerRadius="12" Padding="18">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid>
+                <StackPanel>
+                    <TextBlock Text="双向同传" Foreground="#D5B85C" FontSize="18" FontWeight="Bold"/>
+                    <TextBlock Text="左侧：中文给对方　　右侧：外语给我　　确认字幕自动留存" Foreground="#8D887E" FontSize="10" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+            <Grid Grid.Row="1" Margin="0,14,0,12">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition Width="125"/><ColumnDefinition Width="8"/><ColumnDefinition Width="125"/><ColumnDefinition Width="8"/><ColumnDefinition Width="125"/><ColumnDefinition Width="8"/><ColumnDefinition Width="125"/></Grid.ColumnDefinitions>
+                <ComboBox x:Name="LanguagePairBox" Style="{StaticResource MacComboBoxStyle}" SelectionChanged="LanguagePairBox_SelectionChanged"/>
+                <Button Grid.Column="2" x:Name="AutoRoutingButton" Content="AI 自动判断" Style="{StaticResource PillButtonStyle}" Click="AutoRoutingButton_Click"/>
+                <Button Grid.Column="4" x:Name="ForeignRoutingButton" Content="对方连续发言" Style="{StaticResource SecondaryPillButtonStyle}" Click="ForeignRoutingButton_Click"/>
+                <Button Grid.Column="6" x:Name="HoldToTalkButton" Content="按住我来说" Style="{StaticResource SecondaryPillButtonStyle}" PreviewMouseLeftButtonDown="HoldToTalkButton_Down" PreviewMouseLeftButtonUp="HoldToTalkButton_Up" LostMouseCapture="HoldToTalkButton_LostCapture"/>
+                <Button Grid.Column="8" x:Name="ChineseRoutingButton" Content="我方连续发言" Style="{StaticResource SecondaryPillButtonStyle}" Click="ChineseRoutingButton_Click"/>
+            </Grid>
+            <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                <TextBlock Text="现场麦克风（同一个麦克风由 AI 判断中文或外语）" Foreground="#8D887E" FontSize="10" Margin="2,0,0,5"/>
+                <ComboBox x:Name="MicrophoneBox" Style="{StaticResource MacComboBoxStyle}"/>
+            </StackPanel>
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="#090A0B" BorderBrush="#6A592B" BorderThickness="1" CornerRadius="10" Padding="14">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <TextBlock x:Name="LeftTitleText" Text="我说中文 → 给对方日文" Foreground="#D5B85C" FontSize="15" FontWeight="SemiBold"/>
+                            <TextBlock Text="这里只显示给对方看的译文" Foreground="#77736B" FontSize="9" Margin="0,4,0,10"/>
+                        </StackPanel>
+                        <TextBox x:Name="LeftHistoryBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                 Background="Transparent" Foreground="#E7E2D7" BorderThickness="0" FontSize="16" Padding="0"/>
+                        <Border Grid.Row="2" Background="#15140F" BorderBrush="#3C3728" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock Text="正在说" Foreground="#8D887E" FontSize="9"/>
+                                <TextBlock x:Name="LeftCurrentSourceText" Foreground="#A49E91" FontSize="11" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                <TextBlock x:Name="LeftCurrentTranslationText" Text="等待中文并翻译……" Foreground="#F4F0E6" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,6,0,4"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="2" Background="#090A0B" BorderBrush="#6A592B" BorderThickness="1" CornerRadius="10" Padding="14">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <TextBlock x:Name="RightTitleText" Text="对方说日文 → 给我中文" Foreground="#D5B85C" FontSize="15" FontWeight="SemiBold"/>
+                            <TextBlock Text="这里只显示给我看的中文译文" Foreground="#77736B" FontSize="9" Margin="0,4,0,10"/>
+                        </StackPanel>
+                        <TextBox x:Name="RightHistoryBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                 Background="Transparent" Foreground="#E7E2D7" BorderThickness="0" FontSize="16" Padding="0"/>
+                        <Border Grid.Row="2" Background="#111419" BorderBrush="#343A44" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock Text="正在说" Foreground="#8D887E" FontSize="9"/>
+                                <TextBlock x:Name="RightCurrentSourceText" Foreground="#A49E91" FontSize="11" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                <TextBlock x:Name="RightCurrentTranslationText" Text="等待外语并翻译……" Foreground="#F4F0E6" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,6,0,4"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+            <StackPanel Grid.Row="4" Margin="0,13,0,0">
+                <TextBlock x:Name="LanguageStatusText" Text="等待开始 · 默认由 AI 自动判断我方与对方多人" Foreground="#8D887E" FontSize="10"/>
+                <ProgressBar x:Name="AudioLevelBar" Height="4" Minimum="0" Maximum="1" Foreground="#D5B85C" Background="#25231C" BorderThickness="0" Margin="0,8,0,0"/>
+            </StackPanel>
+            <Grid Grid.Row="5" Margin="0,14,0,0">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="SaveStatusText" Text="开始后，确认字幕会自动保存；不保存音频" Foreground="#8D887E" FontSize="10"/>
+                    <TextBlock x:Name="RecordPathText" Foreground="#656159" FontSize="9" Margin="0,4,260,0" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="CorrectLastButton" Content="上一句分错了" Width="120" Height="43" Margin="0,0,8,0" Style="{StaticResource SecondaryPillButtonStyle}" Click="CorrectLastButton_Click"/>
+                    <Button x:Name="QuickNewSubtitleButton" Content="有新字幕 · 回到最新" Width="145" Height="43" Margin="0,0,8,0"
+                            Visibility="Collapsed" Style="{StaticResource SecondaryPillButtonStyle}" Click="QuickNewSubtitleButton_Click"/>
+                    <Button x:Name="OpenRecordButton" Content="打开记录" Width="105" Height="43" Margin="0,0,8,0" IsEnabled="False" Style="{StaticResource SecondaryPillButtonStyle}" Click="OpenRecordButton_Click"/>
+                    <Button x:Name="StartButton" Content="开始双向同传" Width="190" Height="43" Style="{StaticResource PillButtonStyle}" Click="StartButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,181 @@
+<Window x:Class="ClassInterpreter.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="AM-LINK" Width="1220" Height="790" MinWidth="940" MinHeight="640"
+        WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource ConsoleBackgroundBrush}"
+        Foreground="{StaticResource PrimaryTextBrush}" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style x:Key="DarkSubtitleMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="#F4E7BC" />
+            <Setter Property="Background" Value="#111214" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="MenuItemBorder"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header"
+                                              RecognizesAccessKey="True"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="MenuItemBorder" Property="Background" Value="#302A1B" />
+                                <Setter Property="Foreground" Value="#FFF1B8" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <ContextMenu x:Key="SubtitleContextMenu" x:Shared="False" Opened="SubtitleContextMenu_Opened"
+                     Background="#111214" Foreground="#F4E7BC" BorderBrush="#5C4E27" BorderThickness="1"
+                     Padding="0">
+            <MenuItem x:Name="AskAiSelectedMenuItem" Header="é—® AI" Click="AskSelectedTextMenuItem_Click"
+                      Style="{StaticResource DarkSubtitleMenuItemStyle}" />
+            <Separator Background="#5C4E27" />
+            <MenuItem x:Name="CopySelectedMenuItem" Header="å¤åˆ¶" Click="CopySelectedTextMenuItem_Click"
+                      Style="{StaticResource DarkSubtitleMenuItemStyle}" />
+        </ContextMenu>
+    </Window.Resources>
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="56" ResizeBorderThickness="7" CornerRadius="12" GlassFrameThickness="0" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Border CornerRadius="12" BorderBrush="#49412A" BorderThickness="1" ClipToBounds="True">
+        <Grid Background="#090A0B">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="56" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="25" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Background="#111214" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="20,0" VerticalAlignment="Center">
+                    <TextBlock Text="AM-LINK" Foreground="{StaticResource GoldAccentBrush}" FontSize="17" FontWeight="Bold" />
+                    <TextBlock Text="  è¯¾å ‚åŒä¼ " Foreground="#B8B3A7" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <Border Grid.Column="1" Background="#1B1A15" BorderBrush="#413A25" BorderThickness="1" CornerRadius="11" Padding="11,5" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="7" Height="7" Fill="{StaticResource GoldAccentBrush}" Margin="0,0,7,0" />
+                        <TextBlock x:Name="StatusText" Text="åƒé—®è¿žæŽ¥å°±ç»ª" Foreground="#D5C98C" FontSize="11" />
+                    </StackPanel>
+                </Border>
+                <Button x:Name="SettingsButton" Grid.Column="2" Content="è®¾ç½®" Style="{StaticResource SecondaryPillButtonStyle}"
+                        MinWidth="76" Height="34" Margin="0,0,10,0" Click="SettingsButton_Click"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True" />
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="0,0,10,0" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Content="â€”" Style="{StaticResource WindowControlButtonStyle}" Click="MinimizeWindowButton_Click" />
+                    <Button Content="â–¡" Style="{StaticResource WindowControlButtonStyle}" Click="MaximizeWindowButton_Click" />
+                    <Button Content="Ã—" Style="{StaticResource WindowControlButtonStyle}" Foreground="#D5B85C" Click="CloseWindowButton_Click" />
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="CourseSidebarColumn" Width="275" />
+                    <ColumnDefinition Width="14" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="CourseSidebar" Grid.Column="0" Style="{StaticResource GlassCardStyle}" Padding="12">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Text="æˆ‘çš„è¯¾ç¨‹" Foreground="{StaticResource GoldAccentBrush}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button Content="â€¹" HorizontalAlignment="Right" Width="32" Height="30" Style="{StaticResource SecondaryPillButtonStyle}" Click="ToggleCourseSidebar_Click" ToolTip="æ”¶èµ·è¯¾ç¨‹è¾¹æ "/>
+                        </Grid>
+                        <StackPanel Grid.Row="1" Margin="0,12,0,10">
+                            <Button Content="åŠ å…¥äº‘ç«¯è¯¾å ‚" Height="38" Style="{StaticResource PillButtonStyle}" Click="ClassroomButton_Click" ToolTip="è¾“å…¥å…­ä½è¯¾å ‚ç ï¼ŒåŒ¿ååŠ å…¥è€å¸ˆçš„è¯¾å ‚é—®é¢˜æ¿"/>
+                            <TextBlock x:Name="ClassroomStatusText" Text="æœªåŠ å…¥ï¼ˆå•æœºæ¨¡å¼ï¼‰" Foreground="#77736B" FontSize="9" Margin="3,5,0,12" TextWrapping="Wrap"/>
+                            <Button Content="âœ¦ ç‹¬ç«‹åŒå‘åŒä¼ " Height="38" Style="{StaticResource PillButtonStyle}" Click="QuickTranslatorButton_Click" ToolTip="æ‰“å¼€å·¦å³åˆ†æ çš„éº¦å…‹é£ŽåŒå‘åŒä¼ ï¼Œå­—å¹•è‡ªåŠ¨ç•™å­˜"/>
+                            <TextBlock Text="ä¸­æ—¥ / ä¸­è‹±éº¦å…‹é£ŽåŒä¼  Â· å­—å¹•è‡ªåŠ¨ç•™å­˜" Foreground="#77736B" FontSize="9" Margin="3,5,0,12"/>
+                            <TextBox x:Name="NewCourseNameBox" Style="{StaticResource MacTextBoxStyle}" ToolTip="è¾“å…¥è¯¾ç¨‹åç§°"/>
+                            <Button Content="ï¼‹ æ–°å»ºè¯¾ç¨‹" Style="{StaticResource DashedConsoleButtonStyle}" Margin="0,7,0,0" Click="CreateCourseButton_Click"/>
+                        </StackPanel>
+                        <Grid Grid.Row="2">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="115"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <TextBlock Text="è¯¾ç¨‹" Foreground="#8D887E" FontSize="10" Margin="2,0,0,5"/>
+                            <Border Grid.Row="1" BorderBrush="#3C3728" BorderThickness="1" CornerRadius="5" Padding="2">
+                                <ScrollViewer VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" CanContentScroll="False">
+                                    <ListBox x:Name="CourseListBox" Background="Transparent" BorderThickness="0" Foreground="#E7E2D7"
+                                             ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                             SelectionChanged="CourseListBox_SelectionChanged" DisplayMemberPath="Name"/>
+                                </ScrollViewer>
+                            </Border>
+                            <TextBlock Grid.Row="2" Text="è¯¥è¯¾ç¨‹çš„æ¯èŠ‚è¯¾ï¼ˆæœ€æ–°åœ¨å‰ï¼‰" Foreground="#8D887E" FontSize="10" Margin="2,12,0,5"/>
+                            <ListBox x:Name="SessionListBox" Grid.Row="3" Height="170" Background="Transparent" BorderThickness="0" Foreground="#C8C2B7"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="SessionListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="4,7">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding LessonNumber, StringFormat=ç¬¬ {0} èŠ‚è¯¾}" FontSize="13" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding StartedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Foreground="#77736B" FontSize="9" Margin="0,3,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding MaterialBadge}" Foreground="#B9A14F" FontSize="9" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                        <StackPanel Grid.Row="3" Margin="0,10,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="7"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                <Button Content="è¯¾ç¨‹æ”¹å" Height="34" Style="{StaticResource SecondaryPillButtonStyle}" Click="RenameCourseButton_Click"/>
+                                <Button x:Name="ArchiveCourseButton" Grid.Column="2" Content="å½’æ¡£è¯¾ç¨‹" Height="34" Style="{StaticResource SecondaryPillButtonStyle}" Click="ArchiveCourseButton_Click"/>
+                            </Grid>
+                            <Button x:Name="DeleteSessionButton" Content="åˆ é™¤é€‰ä¸­çš„è¿™ä¸€èŠ‚è¯¾" Height="34" Style="{StaticResource DashedConsoleButtonStyle}" Margin="0,7,0,0" Click="DeleteSessionButton_Click" IsEnabled="False"/>
+                            <Button x:Name="MergeWithPreviousLessonButton" Content="ä¸Žä¸Šä¸€èŠ‚è¯¾åˆå¹¶" Height="34" Style="{StaticResource DashedConsoleButtonStyle}" Margin="0,7,0,0" Click="MergeWithPreviousLessonButton_Click" IsEnabled="False" ToolTip="æŠŠå½“å‰é€‰ä¸­çš„è¯¾å ‚ä¸Žæ—¶é—´ä¸Šæ›´æ—©çš„ä¸Šä¸€èŠ‚åˆå¹¶ï¼›å­—å¹•ã€é—®AIè®°å½•å’Œè¯¾ä»¶å…³è”éƒ½ä¼šä¿ç•™"/>
+                            <CheckBox x:Name="MergeNearbySessionsCheckBox" Content="æŒ‰æ—¶é—´åˆå¹¶ä¸­æ–­è®°å½•" IsChecked="True" Foreground="#B8B3A7" Margin="2,9,0,0" Checked="MergeNearbySessionsCheckBox_Changed" Unchecked="MergeNearbySessionsCheckBox_Changed" ToolTip="åŒä¸€è¯¾ç¨‹ä¸­ï¼Œé—´éš”ä¸è¶…è¿‡ 30 åˆ†é’Ÿçš„ä¸­æ–­è®°å½•æ˜¾ç¤ºä¸ºåŒä¸€èŠ‚è¯¾"/>
+                            <CheckBox x:Name="ShowArchivedCheckBox" Content="æ˜¾ç¤ºå·²å½’æ¡£è¯¾ç¨‹" Foreground="#8D887E" Margin="2,9,0,0" Checked="ShowArchivedCheckBox_Changed" Unchecked="ShowArchivedCheckBox_Changed"/>
+                        </StackPanel>
+                    </Grid>
+                    </ScrollViewer>
+                </Border>
+                <Button x:Name="OpenSidebarButton" Grid.Column="0" Content="â€º" Width="34" Height="44" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" Style="{StaticResource SecondaryPillButtonStyle}" Click="ToggleCourseSidebar_Click" ToolTip="æ‰“å¼€è¯¾ç¨‹è¾¹æ "/>
+
+                <Grid x:Name="LessonWorkspaceGrid" Grid.Column="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="8" MinWidth="8" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+
+                    <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Background="#3C3728" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                                  ShowsPreview="True" ToolTip="æ‹–åŠ¨è°ƒæ•´ PPT ä¸Žå®žæ—¶ç¿»è¯‘çš„å®½åº¦"/>
+
+                    <Border Grid.Column="0" Style="{StaticResource GlassCardStyle}" Padding="14">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="12" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="è¯¾å ‚è¯¾ä»¶" Foreground="{StaticResource GoldAccentBrush}" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="CurrentSlideTitleText" Text="å°šæœªå¯¼å…¥è¯¾ä»¶" Foreground="#D8D3C7" FontSize="14" TextTrimming="CharacterEllipsis" Margin="0,5,8,0" />
+                           ÷Mm¢G§²ÚîÆ­yÖ–FU7VvvW7F–öä'WGFöåô6Æ–6²"—4Væ&ÆVCÒ$fÇ6R"óà¢Âôw&–Cà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ%6Æ–FTföÆÆ÷u7FGW5FW‡B"w&–Bå&÷sÒ#R"FW‡CÒ.h˜¾XªŽkXþŠxŽûÉ®YîXûKÉ®[»®z¸¾ZÙ~[™^KˆîŠûîK»nš^zX[>ˆB"f÷&Vw&÷VæCÒ"3sss3d""föçE6—¦SÒ#"FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#"ÃÃ"Ãr"óà¢Äw&–Bw&–Bå&÷sÒ#b#à¢Äw&–Bä6öÇVÖäFVf–æ—F–öç3ãÄ6öÇVÖäFVf–æ—F–öâóãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#"óãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ$WFò"óãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#"óãÄ6öÇVÖäFVf–æ—F–öâóãÂôw&–Bä6öÇVÖäFVf–æ—F–öç3à¢Ä'WGFöâƒ¤æÖSÒ%&Wf–÷W56Æ–FT'WGFöâ"6öçFVçCÒ.Kˆ®KˆšR"7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"†V–v‡CÒ#3‚"6Æ–6³Ò%&Wf–÷W56Æ–FT'WGFöåô6Æ–6²"—4Væ&ÆVCÒ$fÇ6R"óà¢Å7F6µæVÂw&–Bä6öÇVÖãÒ#""÷&–VçFF–öãÒ$†÷&—¦öçFÂ#à¢ÅFW‡D&÷‚ƒ¤æÖSÒ$§V×vT&÷‚"v–GFƒÒ#SB"†V–v‡CÒ#3‚"7G–ÆSÒ'µ7FF–5&W6÷W&6RÖ5FW‡D&÷…7G–ÆWÒ"†÷&—¦öçFÄ6öçFVçDÆ–væÖVçCÒ$6VçFW""FööÅF—Ò.‹é>XZ^š^z"¶W”F÷vãÒ$§V×vT&÷…ô¶W”F÷vâ"óà¢Ä'WGFöâƒ¤æÖSÒ$§V×vT'WGFöâ"6öçFVçCÒ.‹{>‹ÚÂ"v–GFƒÒ#c""†V–v‡CÒ#3‚"Ö&v–ãÒ#bÃÃÃ"7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò$§V×FõvT'WGFöåô6Æ–6²"—4Væ&ÆVCÒ$fÇ6R"óà¢Âõ7F6µæVÃà¢Ä'WGFöâƒ¤æÖSÒ$æW‡E6Æ–FT'WGFöâ"w&–Bä6öÇVÖãÒ#B"6öçFVçCÒ.Kˆ¾KˆšR"7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"†V–v‡CÒ#3‚"6Æ–6³Ò$æW‡E6Æ–FT'WGFöåô6Æ–6²"—4Væ&ÆVCÒ$fÇ6R"óà¢Âôw&–Cà¢Âôw&–Cà¢Âô&÷&FW#à ¢Äw&–Bw&–Bä6öÇVÖãÒ#"#à¢Äw&–Bå&÷tFVf–æ—F–öç3ãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ"¢"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ#""óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ#S"óãÂôw&–Bå&÷tFVf–æ—F–öç3à¢Ä&÷&FW"7G–ÆSÒ'µ7FF–5&W6÷W&6RvÆ746&E7G–ÆWÒ"FF–æsÒ###à¢Äw&–Cà¢Äw&–Bƒ¤æÖSÒ$Æ—fU7V'F—FÆUæVÂ#à¢Äw&–Bå&÷tFVf–æ—F–öç3ãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ$WFò"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ"¢"Ö–ä†V–v‡CÒ##c"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ#"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ##R"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ$WFò"óãÂôw&–Bå&÷tFVf–æ—F–öç3à¢Äw&–Cà¢Äw&–Bä6öÇVÖäFVf–æ—F–öç3ãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ"¢"óãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ$WFò"óãÂôw&–Bä6öÇVÖäFVf–æ—F–öç3à¢ÅFW‡D&Æö6²ƒ¤æÖSÒ$÷WGWE7V'F—FÆTÆ&VÂ"FW‡CÒ.KŠÞih~YÎKÊ"f÷&Vw&÷VæCÒ'µ7FF–5&W6÷W&6RvöÆD66VçD''W6‡Ò"föçE6—¦SÒ#""föçEvV–v‡CÒ%6VÖ”&öÆB"fW'F–6ÄÆ–væÖVçCÒ$6VçFW""óà¢Ä'WGFöâƒ¤æÖSÒ$6´”Æ—fT'WGFöâ"w&–Bä6öÇVÖãÒ#"6öçFVçCÒ.™zä’"†V–v‡CÒ#3"7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò$6´”'WGFöåô6Æ–6²"óà¢Âôw&–Cà¢Å67&öÆÅf–WvW"ƒ¤æÖSÒ%G&ç6ÆF–öå67&öÆÅf–WvW""w&–Bå&÷sÒ#"fW'F–6Å67&öÆÄ&%f—6–&–Æ—G“Ò$WFò"Ö&v–ãÒ#ÃBÃÃb"67&öÆÄ6†ævVCÒ%G&ç6ÆF–öå67&öÆÅf–WvW%õ67&öÆÄ6†ævVB#à¢Å7F6µæVÃà¢ÅFW‡D&÷‚ƒ¤æÖSÒ$6öæf—&ÖVEG&ç6ÆF–öåFW‡B"—5&VDöæÇ“Ò%G'VR"&6¶w&÷VæCÒ%G&ç7&VçB"&÷&FW%F†–6¶æW73Ò#"FF–æsÒ# ¢f÷&Vw&÷VæCÒ"4C„C43r"föçE6—¦SÒ##B"FW‡Ew&–æsÒ%w&"6VÆV7F–öä''W6ƒÒ"3t#cs$B ¢fW'F–6Å67&öÆÄ&%f—6–&–Æ—G“Ò$F—6&ÆVB"†÷&—¦öçFÅ67&öÆÄ&%f—6–&–Æ—G“Ò$F—6&ÆVB ¢6öçFW‡DÖVçSÒ'µ7FF–5&W6÷W&6R7V'F—FÆT6öçFW‡DÖVçWÒ"óà¢ÅFW‡D&÷‚ƒ¤æÖSÒ$6†–æW6U7V'F—FÆUFW‡B"FW‡CÒ.zØž[è^[ÈZx¾ŠûîZ.(
+n(
+b"—5&VDöæÇ“Ò%G'VR"&6¶w&÷VæCÒ%G&ç7&VçB"&÷&FW%F†–6¶æW73Ò#"FF–æsÒ# ¢f÷&Vw&÷VæCÒ"4cDSt$2"föçE6—¦SÒ#3"föçEvV–v‡CÒ%6VÖ”&öÆB"FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#Ã"ÃÃ"6VÆV7F–öä''W6ƒÒ"3t#cs$B ¢fW'F–6Å67&öÆÄ&%f—6–&–Æ—G“Ò$F—6&ÆVB"†÷&—¦öçFÅ67&öÆÄ&%f—6–&–Æ—G“Ò$F—6&ÆVB ¢6öçFW‡DÖVçSÒ'µ7FF–5&W6÷W&6R7V'F—FÆT6öçFW‡DÖVçWÒ"óà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ%G&ç6ÆF–öå7FGW5FW‡B"f÷&Vw&÷VæCÒ"4CT#ƒT2"föçE6—¦SÒ#""FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#ÃÃÃ"óà¢Âõ7F6µæVÃà¢Âõ67&öÆÅf–WvW#à¢Ä'WGFöâƒ¤æÖSÒ$æWu7V'F—FÆT'WGFöâ"w&–Bå&÷sÒ#"6öçFVçCÒ.iÈžikZÙ~[™R+rY¹îX‹iÈik"†÷&—¦öçFÄÆ–væÖVçCÒ%&–v‡B"fW'F–6ÄÆ–væÖVçCÒ$&÷GFöÒ ¢†V–v‡CÒ#3""Ö&v–ãÒ#ÃÃ"Ã#"f—6–&–Æ—G“Ò$6öÆÆ6VB"7G–ÆSÒ'µ7FF–5&W6÷W&6R–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò$æWu7V'F—FÆT'WGFöåô6Æ–6²"æVÂå¤–æFWƒÒ#2"óà¢Ä&÷&FW"w&–Bå&÷sÒ#""&6¶w&÷VæCÒ"333$c#2"óà¢Å7F6µæVÂw&–Bå&÷sÒ#2"Ö&v–ãÒ#ÃRÃÃ"6Æ—Fô&÷VæG3Ò%G'VR#à¢ÅFW‡D&Æö6²ƒ¤æÖSÒ%6÷W&6U7V'F—FÆTÆ&VÂ"FW‡CÒ.ŠønXŠ¾Xéþihr"f÷&Vw&÷VæCÒ"3„CƒƒtR"föçE6—¦SÒ#"óà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ%6÷W&6U7V'F—FÆUFW‡B"FW‡CÒ.Xéþih~KÉ®i‹îzK®YÊŽ‹ùž˜xÂ"f÷&Vw&÷VæCÒ"4#4T2"föçE6—¦SÒ#b"Æ–æT†V–v‡CÒ##R"FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#ÃrÃÃ"Ö„†V–v‡CÒ#sR"óà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ$ÆæwVvU7FGW5FW‡B"FW‡CÒ.zØž[è^ŠønXŠ¾ŠúÞŠˆ"f÷&Vw&÷VæCÒ"3dcd#c2"föçE6—¦SÒ#"Ö&v–ãÒ#Ã‚ÃÃ"óà¢Âõ7F6µæVÃà¢Å&öw&W74&"ƒ¤æÖSÒ$VF–ôÆWfVÄ&""w&–Bå&÷sÒ#B"†V–v‡CÒ#B"Ö–æ–×VÓÒ#"Ö†–×VÓÒ#"f÷&Vw&÷VæCÒ'µ7FF–5&W6÷W&6RvöÆD66VçD''W6‡Ò"&6¶w&÷VæCÒ"3#S#32"&÷&FW%F†–6¶æW73Ò#"Ö&v–ãÒ#ÃBÃÃ"óà¢Âôw&–Cà¢Äw&–Bƒ¤æÖSÒ$†—7F÷'•æVÂ"f—6–&–Æ—G“Ò$6öÆÆ6VB#à¢Äw&–Bå&÷tFVf–æ—F–öç3ãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ$WFò"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ$WFò"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ"¢"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ$WFò"óãÂôw&–Bå&÷tFVf–æ—F–öç3à¢Äw&–Cà¢Å7F6µæVÃà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ$†—7F÷'•F—FÆUFW‡B"FW‡CÒ.ZÚnKšŠë[ÙR"f÷&Vw&÷VæCÒ'µ7FF–5&W6÷W&6RvöÆD66VçD''W6‡Ò"föçE6—¦SÒ#b"föçEvV–v‡CÒ%6VÖ”&öÆB"óà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ$†—7F÷'”ÖWFFW‡B"f÷&Vw&÷VæCÒ"3sss3d""föçE6—¦SÒ#"Ö&v–ãÒ#ÃRÃÃ"óà¢Âõ7F6µæVÃà¢Ä'WGFöâ6öçFVçCÒ.‹ùNY¹â"†÷&—¦öçFÄÆ–væÖVçCÒ%&–v‡B"†V–v‡CÒ#3""7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò$W†—D†—7F÷'”'WGFöåô6Æ–6²"óà¢Âôw&–Cà¢Äw&–Bw&–Bå&÷sÒ#"Ö&v–ãÒ#ÃBÃÃ‚#à¢ÅFW‡D&Æö6²FW‡CÒ.Xúþh¹nXªŽ˜žhºž87G&Â´2ZHÞX‹nûÈÎXû>Kê~k¹®XªŽiÚXúþKˆ®Kˆ¾kXþŠxŽ8""f÷&Vw&÷VæCÒ"3„CƒƒtR"föçE6—¦SÒ#"FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#ÃÃ#‚Ã"óà¢Ä6†V6´&÷‚ƒ¤æÖSÒ$ÖW&vUG&ç67&—D6†V6´&÷‚"6öçFVçCÒ.YŽ[›n™»nz(îZÙ~[™R"—46†V6¶VCÒ%G'VR"f÷&Vw&÷VæCÒ"43T#cdb"föçE6—¦SÒ#"†÷&—¦öçFÄÆ–væÖVçCÒ%&–v‡B"6†V6¶VCÒ$ÖW&vUG&ç67&—D6†V6´&÷…ô6†ævVB"Væ6†V6¶VCÒ$ÖW&vUG&ç67&—D6†V6´&÷…ô6†ævVB"óà¢Âôw&–Cà¢ÅFW‡D&÷‚ƒ¤æÖSÒ$†—7F÷'•G&ç67&—D&÷‚"w&–Bå&÷sÒ#""—5&VDöæÇ“Ò%G'VR"66WG5&WGW&ãÒ%G'VR"FW‡Ew&–æsÒ%w& ¢fW'F–6Å67&öÆÄ&%f—6–&–Æ—G“Ò$WFò"†÷&—¦öçFÅ67&öÆÄ&%f—6–&–Æ—G“Ò$F—6&ÆVB ¢&6¶w&÷VæCÒ"3#3R"f÷&Vw&÷VæCÒ"4StS$Cr"&÷&FW$''W6ƒÒ"3433s#‚"&÷&FW%F†–6¶æW73Ò# ¢föçE6—¦SÒ#R"FF–æsÒ#B"6VÆV7F–öä''W6ƒÒ"3t#cs$B ¢6öçFW‡DÖVçSÒ'µ7FF–5&W6÷W&6R7V'F—FÆT6öçFW‡DÖVçWÒ"óà¢Å7F6µæVÂw&–Bå&÷sÒ#2"Ö&v–ãÒ#ÃÃÃ#à¢Äw&–Cà¢Äw&–Bä6öÇVÖäFVf–æ—F–öç3ãÄ6öÇVÖäFVf–æ—F–öâóãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#R"óãÄ6öÇVÖäFVf–æ—F–öâóãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#R"óãÄ6öÇVÖäFVf–æ—F–öâóãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#R"óãÄ6öÇVÖäFVf–æ—F–öâóãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#R"óãÄ6öÇVÖäFVf–æ—F–öâóãÂôw&–Bä6öÇVÖäFVf–æ—F–öç3à¢Ä'WGFöâ6öçFVçCÒ.™zä’"†V–v‡CÒ#3b"7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò$6´”'WGFöåô6Æ–6²"óà¢Ä'WGFöâw&–Bä6öÇVÖãÒ#""6öçFVçCÒ.ZHÞX‹b"†V–v‡CÒ#3b"7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò$6÷”†—7F÷'”'WGFöåô6Æ–6²"óà¢Ä'WGFöâƒ¤æÖSÒ$÷Vå7GVG•6´'WGFöâ"w&–Bä6öÇVÖãÒ#B"6öçFVçCÒ$žZÚnKšXÈR"†V–v‡CÒ#3b"7G–ÆSÒ'µ7FF–5&W6÷W&6RF6†VD6öç6öÆT'WGFöå7G–ÆWÒ"6Æ–6³Ò$÷Vå7GVG•6´'WGFöåô6Æ–6²"—4Væ&ÆVCÒ$fÇ6R"óà¢Ä'WGFöâƒ¤æÖSÒ%&VvVæW&FU7GVG•6´'WGFöâ"w&–Bä6öÇVÖãÒ#b"6öçFVçCÒ.˜xÞikh¾{¹2"†V–v‡CÒ#3b"7G–ÆSÒ'µ7FF–5&W6÷W&6RF6†VD6öç6öÆT'WGFöå7G–ÆWÒ"6Æ–6³Ò%&VvVæW&FU7GVG•6´'WGFöåô6Æ–6²"FööÅF—Ò.šinjÊyIþh‰ZK‹J^ûÈÎh‰n{º~{ºÞKˆ®ŠûîYîûÈÎyJŽXØ>™zî˜xÞik™ˆ^Šû¾i[Nˆ¨.Šûî[›nyIþh‰iky¨DžZÚnKšXÈR"óà¢Ä'WGFöâƒ¤æÖSÒ$6öçF–çVTÆW76öä'WGFöâ"w&–Bä6öÇVÖãÒ#‚"6öçFVçCÒ.{º~{ºÒ"†V–v‡CÒ#3b"7G–ÆSÒ'µ7FF–5&W6÷W&6R–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò$6öçF–çVTÆW76öä'WGFöåô6Æ–6²"óà¢Âôw&–Cà¢Ä'WGFöâƒ¤æÖSÒ$÷Vå&V6÷&F–æw4'WGFöâ"6öçFVçCÒ.iú^yÈ¾iÊÎˆ¨.Šûî[Ù^™û2"†V–v‡CÒ#3B"Ö&v–ãÒ#ÃrÃÃ ¢7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò$÷Vå&V6÷&F–æw4'WGFöåô6Æ–6²"—4Væ&ÆVCÒ$fÇ6R ¢FööÅF—Ò.hÈž[Ù^X‹ni{n™{Niú^yÈ¾‹ùžˆ¨.ŠûîXø®X[nh˜iÈžKŠÞijÞXˆnjë^y¨N[Ù^™û2"óà¢Âõ7F6µæVÃà¢Âôw&–Cà¢Âôw&–Cà¢Âô&÷&FW#à¢Äw&–Bw&–Bå&÷sÒ#"#à¢Äw&–Bä6öÇVÖäFVf–æ—F–öç3ãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#¢"óãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#"óãÄ6öÇVÖäFVf–æ—F–öâv–GFƒÒ#"¢"óãÂôw&–Bä6öÇVÖäFVf–æ—F–öç3à¢Ä'WGFöâƒ¤æÖSÒ$FVÖô'WGFöâ"6öçFVçCÒ.kÉNzK¢"7G–ÆSÒ'µ7FF–5&W6÷W&6RF6†VD6öç6öÆT'WGFöå7G–ÆWÒ"6Æ–6³Ò$FVÖô'WGFöåô6Æ–6²"óà¢Ä'WGFöâƒ¤æÖSÒ%7F'D6Æ74'WGFöâ"w&–Bä6öÇVÖãÒ#""6öçFVçCÒ.[ÈZx¾ŠûîZ.YÎKÊ"7G–ÆSÒ'µ7FF–5&W6÷W&6R–ÆÄ'WGFöå7G–ÆWÒ"6Æ–6³Ò%7F'D6Æ74'WGFöåô6Æ–6²"óà¢Âôw&–Cà¢Âôw&–Cà¢Âôw&–Cà ¢Ä&÷&FW"ƒ¤æÖSÒ%6WGF–æw4G&vW""w&–Bä6öÇVÖãÒ#""v–GFƒÒ#3ƒ"†÷&—¦öçFÄÆ–væÖVçCÒ%&–v‡B"fW'F–6ÄÆ–væÖVçCÒ%7G&WF6‚ ¢&6¶w&÷VæCÒ"3#B"&÷&FW$''W6ƒÒ"3dS“$""&÷&FW%F†–6¶æW73Ò#"6÷&æW%&F—W3Ò#" ¢f—6–&–Æ—G“Ò$6öÆÆ6VB"æVÂå¤–æFWƒÒ##"FF–æsÒ#‚#à¢Äw&–Cà¢Äw&–Bå&÷tFVf–æ—F–öç3ãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ$WFò"óãÅ&÷tFVf–æ—F–öâ†V–v‡CÒ"¢"óãÂôw&–Bå&÷tFVf–æ—F–öç3à¢Äw&–BÖ&v–ãÒ#"ÃÃ"Ã"#à¢ÅFW‡D&Æö6²FW‡CÒ.ŠûîZ.Šëî{Úâ"f÷&Vw&÷VæCÒ'µ7FF–5&W6÷W&6RvöÆD66VçD''W6‡Ò"föçE6—¦SÒ#r"föçEvV–v‡CÒ%6VÖ”&öÆB"fW'F–6ÄÆ–væÖVçCÒ$6VçFW""óà¢Ä'WGFöâ6öçFVçCÒ.X[>™zÒ"†÷&—¦öçFÄÆ–væÖVçCÒ%&–v‡B"7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"†V–v‡CÒ#3""6Æ–6³Ò%6WGF–æw4'WGFöåô6Æ–6²"óà¢Âôw&–Cà¢Å67&öÆÅf–WvW"w&–Bå&÷sÒ#"fW'F–6Å67&öÆÄ&%f—6–&–Æ—G“Ò$WFò"†÷&—¦öçFÅ67&öÆÄ&%f—6–&–Æ—G“Ò$F—6&ÆVB#à¢Å7F6µæVÂÖ&v–ãÒ#"ÃÃ‚Ã"#à¢ÅFW‡D&Æö6²FW‡CÒ.{û¾ŠùikžY	"f÷&Vw&÷VæCÒ"3“ƒ“#ƒr"föçE6—¦SÒ#"Ö&v–ãÒ#"ÃRÃÃb"óà¢Ä6öÖ&ô&÷‚ƒ¤æÖSÒ%G&ç6ÆF–öäF—&V7F–öä&÷‚"7G–ÆSÒ'µ7FF–5&W6÷W&6RÖ46öÖ&ô&÷…7G–ÆWÒ"6VÆV7F–öä6†ævVCÒ%G&ç6ÆF–öäF—&V7F–öä&÷…õ6VÆV7F–öä6†ævVB"óà¢ÅFW‡D&Æö6²FW‡CÒ.›ªnXX¾š8â"f÷&Vw&÷VæCÒ"3“ƒ“#ƒr"föçE6—¦SÒ#"Ö&v–ãÒ#"ÃrÃÃb"óà¢Ä6öÖ&ô&÷‚ƒ¤æÖSÒ$Ö–7&÷†öæT&÷‚"7G–ÆSÒ'µ7FF–5&W6÷W&6RÖ46öÖ&ô&÷…7G–ÆWÒ"óà¢Ä'WGFöâƒ¤æÖSÒ$Ö–7&÷†öæUFW7D'WGFöâ"6öçFVçCÒ.[Ù^X‹b3zy.kX¾Šù^™û>š)"7G–ÆSÒ'µ7FF–5&W6÷W&6RF6†VD6öç6öÆT'WGFöå7G–ÆWÒ"Ö&v–ãÒ#Ã‚ÃÃ"6Æ–6³Ò$Ö–7&÷†öæUFW7D'WGFöåô6Æ–6²"óà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ$Ö–7&÷†öæU7FGW5FW‡B"FW‡CÒ.kX¾Šù^™û>š)KùÞZÙŽYÊ‚By¹‚"f÷&Vw&÷VæCÒ"3sss3d""föçE6—¦SÒ#"FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#2ÃbÃÃ"óà¢ÅFW‡D&Æö6²FW‡CÒ.[Ù>X˜ÞŠûîzˆ²"f÷&Vw&÷VæCÒ"3“ƒ“#ƒr"föçE6—¦SÒ#"Ö&v–ãÒ#"ÃrÃÃb"óà¢ÅFW‡D&÷‚ƒ¤æÖSÒ$6÷W'6TæÖT&÷‚"FW‡CÒ.Šû~YÊŽ[znKê~˜žhºžh‰nik[»®Šûîzˆ²"7G–ÆSÒ'µ7FF–5&W6÷W&6RÖ5FW‡D&÷…7G–ÆWÒ"—5&VDöæÇ“Ò%G'VR"óà¢ÅFW‡D&Æö6²FW‡CÒ.XØ>™zî‹ùîhêR"f÷&Vw&÷VæCÒ"3“ƒ“#ƒr"föçE6—¦SÒ#"Ö&v–ãÒ#"ÃrÃÃb"óà¢Å77v÷&D&÷‚ƒ¤æÖSÒ$”¶W”&÷‚"7G–ÆSÒ'µ7FF–5&W6÷W&6RÖ577v÷&D&÷…7G–ÆWÒ"óà¢ÅFW‡D&Æö6²FW‡CÒ$’¶WžûÈŽ[{.KùÞZÙŽi{n‹é>XZ^jnKÉ®yYžz›®ûÈÎKˆÞKº>ŠŽKŠ.ZKûÈ’"f÷&Vw&÷VæCÒ"3c“cSTR"föçE6—¦SÒ#’"Ö&v–ãÒ#2ÃBÃÃ"óà¢ÅFW‡D&÷‚ƒ¤æÖSÒ%v÷&·76T–D&÷‚"7G–ÆSÒ'µ7FF–5&W6÷W&6RÖ5FW‡D&÷…7G–ÆWÒ"Ö&v–ãÒ#Ã’ÃÃ"óà¢ÅFW‡D&Æö6²FW‡CÒ.[z^KÙÎz›®™{B”NûÈŽikXªYÚz¹ž[ø^Z¾ûÈ’"f÷&Vw&÷VæCÒ"3c“cSTR"föçE6—¦SÒ#’"Ö&v–ãÒ#2ÃBÃÃ"óà¢Ä'WGFöâƒ¤æÖSÒ%6fT¶W”'WGFöâ"6öçFVçCÒ.KùÞZÙŽ‹ùîhê^Kúhò"7G–ÆSÒ'µ7FF–5&W6÷W&6RF6†VD6öç6öÆT'WGFöå7G–ÆWÒ"Ö&v–ãÒ#Ã’ÃÃ"6Æ–6³Ò%6fT¶W”'WGFöåô6Æ–6²"óà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ$¶W•7FGW5FW‡B"FW‡CÒ$¶W’K¸^KùÞZÙŽYÊ‚v–æF÷w2XzÞhÚî[©2"f÷&Vw&÷VæCÒ"3sss3d""föçE6—¦SÒ#"FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#2ÃrÃÃ"óà¢Ä'WGFöâƒ¤æÖSÒ$•W6vT'WGFöâ"6öçFVçCÒ.iú^yÈ²’yJŽ˜xò"7G–ÆSÒ'µ7FF–5&W6÷W&6R6V6öæF'•–ÆÄ'WGFöå7G–ÆWÒ"Ö&v–ãÒ#ÃbÃÃ"†V–v‡CÒ#C"6Æ–6³Ò$•W6vT'WGFöåô6Æ–6²"óà¢ÅFW‡D&Æö6²FW‡CÒ.[Ù^™û>ˆz®XªŽKùÞyY’BZJž8""f÷&Vw&÷VæCÒ"3dcd#c2"föçE6—¦SÒ#"FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#2Ã#ÃÃ"óà¢ÅFW‡D&Æö6²ƒ¤æÖSÒ$FF&ö÷EFW‡B"FW‡CÒ.i[hÚîKØÞ{ÚîûÉ®jÚ>YÊŽj8kX²"f÷&Vw&÷VæCÒ"3dcd#c2"föçE6—¦SÒ#"FW‡Ew&–æsÒ%w&"Ö&v–ãÒ#2ÃRÃÃ"óà¢Âõ7F6µæVÃà¢Âõ67&öÆÅf–WvW#à¢Âôw&–Cà¢Âô&÷&FW#à¢Âôw&–Cà ¢Äw&–Bw&–Bå&÷sÒ#""&6¶w&÷VæCÒ"33Cb#à¢ÅFW‡D&Æö6²FW‡CÒ$FWfVÆ÷VB'’ÆTÖ67&VR"f÷&Vw&÷VæCÒ"3TCS“Db"föçE6—¦SÒ#’"†÷&—¦öçFÄÆ–væÖVçCÒ$6VçFW""fW'F–6ÄÆ–væÖVçCÒ$6VçFW""óà¢Âôw&–Cà¢Âôw&–Cà¢Âô&÷&FW#à£Âõv–æF÷sà

@@ -1,0 +1,224 @@
+<Application x:Class="ClassInterpreter.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <SolidColorBrush x:Key="GoldAccentBrush" Color="#D5B85C" />
+        <SolidColorBrush x:Key="GoldMutedBrush" Color="#8A7437" />
+        <SolidColorBrush x:Key="ConsoleBackgroundBrush" Color="#090A0B" />
+        <SolidColorBrush x:Key="ConsolePanelBrush" Color="#101113" />
+        <SolidColorBrush x:Key="ConsoleInsetBrush" Color="#0B0C0E" />
+        <SolidColorBrush x:Key="ConsoleBorderBrush" Color="#3C3728" />
+        <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F4F0E6" />
+        <SolidColorBrush x:Key="SecondaryTextBrush" Color="#969188" />
+        <SolidColorBrush x:Key="TertiaryTextBrush" Color="#66635D" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#D5B85C" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+        </Style>
+
+        <Style x:Key="GlassCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource ConsolePanelBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource ConsoleBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="15" />
+            <Setter Property="Padding" Value="18" />
+        </Style>
+
+        <Style x:Key="InsetGlassStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource ConsoleInsetBrush}" />
+            <Setter Property="BorderBrush" Value="#50482E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
+
+        <Style x:Key="PillButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="Foreground" Value="#111214" />
+            <Setter Property="Background" Value="{StaticResource GoldAccentBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonChrome" Background="{TemplateBinding Background}" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonChrome" Property="Opacity" Value="0.86" /></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonChrome" Property="Opacity" Value="0.65" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="ButtonChrome" Property="Opacity" Value="0.35" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DashedConsoleButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Foreground" Value="{StaticResource GoldAccentBrush}" />
+            <Setter Property="Background" Value="#121315" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}" CornerRadius="9" />
+                            <Rectangle x:Name="Dash" RadiusX="9" RadiusY="9" Stroke="{StaticResource GoldMutedBrush}" StrokeThickness="1" StrokeDashArray="4 3" Margin="1" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Dash" Property="Stroke" Value="{StaticResource GoldAccentBrush}" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.35" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryPillButtonStyle" TargetType="Button" BasedOn="{StaticResource DashedConsoleButtonStyle}" />
+
+        <Style x:Key="MacTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Background" Value="#0B0C0E" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+            <Setter Property="CaretBrush" Value="{StaticResource GoldAccentBrush}" />
+            <Setter Property="BorderBrush" Value="#4A4433" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="InputBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="12,0" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="InputBorder" Property="BorderBrush" Value="{StaticResource GoldAccentBrush}" /></Trigger></ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MacPasswordBoxStyle" TargetType="PasswordBox">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Background" Value="#0B0C0E" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+            <Setter Property="CaretBrush" Value="{StaticResource GoldAccentBrush}" />
+            <Setter Property="BorderBrush" Value="#4A4433" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border x:Name="InputBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="12,0" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="InputBorder" Property="BorderBrush" Value="{StaticResource GoldAccentBrush}" /></Trigger></ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MacComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Background" Value="#151619" />
+            <Setter Property="Foreground" Value="#E7E2D7" />
+            <Setter Property="BorderBrush" Value="#6B5A2C" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="ItemTemplate"><Setter.Value><DataTemplate><TextBlock Text="{Binding}" Foreground="#E7E2D7" TextTrimming="CharacterEllipsis" ToolTip="{Binding}" /></DataTemplate></Setter.Value></Setter>
+            <Setter Property="Template"><Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7"/>
+                        <Grid Margin="10,0,8,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="22"/></Grid.ColumnDefinitions>
+                            <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"/>
+                            <ToggleButton Grid.Column="1" Background="Transparent" BorderThickness="0" Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"><TextBlock Text="⌄" Foreground="#CDB85E" FontSize="16"/></ToggleButton>
+                        </Grid>
+                        <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False">
+                            <Border Background="#111214" BorderBrush="#6B5A2C" BorderThickness="1" CornerRadius="7" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="300" Margin="0,3,0,0">
+                                <ScrollViewer><ItemsPresenter/></ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="#D5B85C"/></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value></Setter>
+            <Setter Property="ItemContainerStyle"><Setter.Value>
+                <Style TargetType="ComboBoxItem"><Setter Property="Padding" Value="10,8"/><Setter Property="Background" Value="#111214"/><Setter Property="Foreground" Value="#E7E2D7"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border x:Name="ItemBorder" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ItemBorder" Property="Background" Value="#28251B"/></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemBorder" Property="Background" Value="#4A4022"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+            </Setter.Value></Setter>
+        </Style>
+
+        <Style x:Key="WindowControlButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="34" /><Setter Property="Height" Value="28" /><Setter Property="Margin" Value="3,0" />
+            <Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="#8B867C" /><Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style x:Key="DarkScrollThumbStyle" TargetType="Thumb">
+            <Setter Property="Background" Value="#8A7437" />
+            <Setter Property="Width" Value="9" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="ThumbBorder" Background="{TemplateBinding Background}" CornerRadius="5" Margin="2,2" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ThumbBorder" Property="Background" Value="#D5B85C" /></Trigger>
+                            <Trigger Property="IsDragging" Value="True"><Setter TargetName="ThumbBorder" Property="Background" Value="#F0D36A" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DarkScrollRepeatButtonStyle" TargetType="RepeatButton">
+            <Setter Property="Background" Value="#151619" />
+            <Setter Property="Foreground" Value="#B9A14F" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="#302A1B" /></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="#4A4022" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="15" />
+            <Setter Property="Background" Value="#151619" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="#151619" Width="{TemplateBinding Width}">
+                            <Grid.RowDefinitions><RowDefinition Height="18"/><RowDefinition Height="*"/><RowDefinition Height="18"/></Grid.RowDefinitions>
+                            <RepeatButton Grid.Row="0" Style="{StaticResource DarkScrollRepeatButtonStyle}" Command="ScrollBar.LineUpCommand" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"><TextBlock Text="⌃" Foreground="#B9A14F" FontSize="13"/></RepeatButton>
+                            <Track x:Name="PART_Track" Grid.Row="1" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton><RepeatButton Style="{StaticResource DarkScrollRepeatButtonStyle}" Command="ScrollBar.PageUpCommand" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"/></Track.DecreaseRepeatButton>
+                                <Track.Thumb><Thumb Style="{StaticResource DarkScrollThumbStyle}"/></Track.Thumb>
+                                <Track.IncreaseRepeatButton><RepeatButton Style="{StaticResource DarkScrollRepeatButtonStyle}" Command="ScrollBar.PageDownCommand" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"/></Track.IncreaseRepeatButton>
+                            </Track>
+                            <RepeatButton Grid.Row="2" Style="{StaticResource DarkScrollRepeatButtonStyle}" Command="ScrollBar.LineDownCommand" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"><TextBlock Text="⌄" Foreground="#B9A14F" FontSize="13"/></RepeatButton>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>

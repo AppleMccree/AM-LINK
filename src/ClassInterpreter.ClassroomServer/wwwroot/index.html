@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AM-LINK 教师课堂</title>
+  <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<header><div class="brand">AM-LINK <span>教师课堂</span></div><div id="connection">● 正在连接</div></header>
+<main>
+  <section id="loading" class="card narrow"><h1>正在检查课堂服务器……</h1></section>
+
+  <section id="setup" class="card narrow hidden">
+    <h1>首次建立教师课程</h1>
+    <p>只需要设置一次。以后两三位老师可以使用同一个课程名称和共享密码登录。</p>
+    <label>课程名称<input id="setupCourse" placeholder="例如：Human-AI Interaction"></label>
+    <label>共享教师密码<input id="setupPassword" type="password" minlength="6" placeholder="至少6位"></label>
+    <label>服务器初始化密钥<input id="bootstrapKey" type="password" placeholder="由服务器部署者提供"></label>
+    <button onclick="setupCourse()">创建教师课程</button>
+    <div id="setupError" class="error"></div>
+  </section>
+
+  <section id="login" class="card narrow hidden">
+    <h1>教师登录</h1>
+    <p>同一课程的两三位老师可以使用相同密码同时登录。</p>
+    <label>课程名称<input id="course" autocomplete="organization"></label>
+    <label>共享教师密码<input id="password" type="password"></label>
+    <button onclick="login()">登录</button>
+    <div id="loginError" class="error"></div>
+  </section>
+
+  <section id="home" class="hidden">
+    <div class="toolbar card"><div><h1 id="courseTitle">课程</h1><p>创建本次课堂后，把六位课堂码告诉学生。</p></div><div class="row"><input id="lessonName" placeholder="例如：第3节课"><button onclick="createLesson()">创建课堂</button></div></div>
+    <div id="activeLessons" class="card"><h2>课堂记录</h2><p>已结束课堂仍可查看、导出和删除。</p><div id="lessonList"></div></div>
+    <div id="lessonCreated" class="card hidden"><h2>课堂已创建</h2><p>把下面六位数字发给学生：</p><div class="code" id="classCode">000000</div><button onclick="openDashboard()">打开实时看板</button></div>
+    <div class="card"><h2>教师安全</h2><div class="row"><input id="newPassword" type="password" placeholder="新共享密码（至少6位）"><button class="danger" onclick="changePassword()">修改并退出全部老师</button></div></div>
+  </section>
+
+  <section id="dashboard" class="hidden">
+    <div class="toolbar card"><div><h1 id="lessonTitle">课堂实时看板</h1><p>课堂码 <b id="dashCode"></b> · 进行中每2秒自动刷新</p></div><div class="row"><button class="ghost" onclick="backHome()">返回课堂列表</button><button class="ghost" onclick="downloadCsv()">导出问题</button><button id="endLessonButton" class="danger" onclick="endLesson()">结束课堂</button><button class="danger" onclick="deleteLesson()">永久删除</button></div></div>
+    <div class="stats"><article><strong id="online">0</strong><span>在线学生</span></article><article><strong id="questions">0</strong><span>问题数</span></article><article><strong id="askers">0</strong><span>匿名提问人数</span></article><article><strong id="unresolved">0</strong><span>未讲解</span></article><article><strong id="confusions">0</strong><span>没听懂信号</span></article></div>
+    <div class="grid">
+      <section class="card"><h2>问题热点</h2><div id="topicHotspots" class="hotspots"></div><h2>PPT页码热点</h2><div id="pageHotspots" class="hotspots"></div><h2>时间热点</h2><div id="timeHotspots" class="hotspots"></div><h2>老师广播</h2><div class="row"><input id="broadcast" placeholder="发给本课堂所有学生"><button onclick="sendBroadcast()">发送</button></div><div id="broadcasts"></div></section>
+      <section class="card"><div class="sectionTitle"><h2>匿名问题板</h2><label><input type="checkbox" id="onlyOpen" onchange="render()">只看未讲解</label></div><div id="questionList"></div></section>
+    </div>
+  </section>
+</main>
+<script src="/site.js"></script>
+</body>
+</html>

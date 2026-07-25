@@ -1,0 +1,42 @@
+services:
+  classroom-server:
+    build:
+      context: ..
+      dockerfile: src/ClassInterpreter.ClassroomServer/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Classroom__Database: /data/classrooms.db
+      Classroom__BootstrapKey: ${CLASSROOM_BOOTSTRAP_KEY}
+      Qwen__ApiKey: ${QWEN_API_KEY:-}
+      Qwen__Endpoint: ${QWEN_ENDPOINT:-https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions}
+    volumes:
+      - classroom-data:/data
+    networks:
+      - classroom
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - classroom-server
+    environment:
+      CLASSROOM_DOMAIN: ${CLASSROOM_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - classroom
+
+volumes:
+  classroom-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  classroom:

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>ClassInterpreter</AssemblyName>
+    <RootNamespace>ClassInterpreter.App</RootNamespace>
+    <ApplicationIcon>Assets\am-link.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ClassInterpreter.Core\ClassInterpreter.Core.csproj" />
+    <ProjectReference Include="..\ClassInterpreter.Infrastructure\ClassInterpreter.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

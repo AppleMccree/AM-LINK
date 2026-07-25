@@ -1,0 +1,51 @@
+# Build output
+**/bin/
+**/obj/
+.vs/
+.idea/
+
+# Local runtime and personal data
+data/
+**/data/
+logs/
+**/logs/
+audio/
+**/audio/
+courses/
+**/courses/
+exports/
+**/exports/
+backups/
+**/backups/
+cache/
+**/cache/
+trash/
+**/trash/
+*.db
+*.db-shm
+*.db-wal
+*.wav
+
+# Local settings and credentials
+settings.json
+appsettings.Development.json
+.env
+.env.*
+!.env.example
+*.user
+*.suo
+
+# Generated packages and private distributions
+dist/
+*.nupkg
+*.zip
+
+# Local third-party runtime binaries; restore/install separately for development.
+vendor/
+*.7z
+
+# Temporary files
+*.tmp
+*.log
+Thumbs.db
+Desktop.ini
