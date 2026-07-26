@@ -226,7 +226,7 @@ static void AiLessonBundleContainsEvidence()
         var slides = new SlideDocument("lesson.pptx", [new SlidePage(1, "问题", "课件正文", "老师备注")]);
         var transcript = new TranscriptSegment(Guid.NewGuid(), session.Id, 1, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(8),
             "これは質問です", "这是一个问题", true, "ja", 1) { TargetText = "这是一个问题" };
-        var question = new AiQuestionRecord(Guid.NewGuid(), "lesson-1", null, DateTimeOffset.Now, "什么意思？", "��}5��$z{-���jםrison.Ordinal) &&
+        var question = new AiQuestionRecord(Guid.NewGuid(), "lesson-1", null, DateTimeOffset.Now, "什么意思？", "��o|��$z{-���jם"", StringComparison.Ordinal) &&
             xaml.Contains("CopyHistoryButton_Click", StringComparison.Ordinal),
         "History transcript is not scrollable and copyable.");
     Require(xaml.Contains("x:Name=\"JumpPageBox\"", StringComparison.Ordinal) &&
@@ -322,7 +322,7 @@ static string FindProjectRoot()
     {
         directory = directory.Parent;
     }
-    return directory?.FullName ?? @"D:\Codex\ClassInterpreter";
+    return directory?.FullName ?? @"D:\AM-LINK";
 }
 
 static void HeadlessDemoWritesArtifacts()

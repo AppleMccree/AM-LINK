@@ -4,7 +4,7 @@ using ClassInterpreter.Core.Speech;
 
 public sealed record AppSettings
 {
-    public string DataRoot { get; init; } = @"D:\Codex\ClassInterpreter";
+    public string DataRoot { get; init; } = @"D:\AM-LINK";
 
     public string QwenEndpoint { get; init; } = "wss://dashscope-intl.aliyuncs.com";
 

@@ -2,7 +2,7 @@ namespace ClassInterpreter.Core.Configuration;
 
 public static class AppRootResolver
 {
-    private const string LegacyRoot = @"D:\Codex\ClassInterpreter";
+    private const string PreferredDataRoot = @"D:\AM-LINK";
 
     public static string Resolve(string executableDirectory, string localAppData, Func<string, bool> isWritable, bool dDriveExists)
     {
@@ -11,7 +11,7 @@ public static class AppRootResolver
         ArgumentNullException.ThrowIfNull(isWritable);
 
         var candidates = new List<string>();
-        if (dDriveExists) candidates.Add(LegacyRoot);
+        if (dDriveExists) candidates.Add(PreferredDataRoot);
         candidates.Add(executableDirectory);
         candidates.Add(Path.Combine(localAppData, "AM-LINK"));
 
