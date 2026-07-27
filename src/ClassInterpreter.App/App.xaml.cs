@@ -1,6 +1,7 @@
 using System.Windows;
 using System.IO;
 using ClassInterpreter.Core.Configuration;
+using ClassInterpreter.Infrastructure.Logging;
 using ClassInterpreter.Infrastructure.Retention;
 using ClassInterpreter.Infrastructure.Timeline;
 using ClassInterpreter.Core.Demo;
@@ -14,11 +15,45 @@ namespace ClassInterpreter.App;
 
 public partial class App : Application
 {
+    // 全局异常兜底：任何一个漏掉 try/catch 的事件处理器都不该让整节课的录音和字幕陪葬。
+    private void RegisterGlobalExceptionGuard(AppPaths paths)
+    {
+        var logDirectory = Path.Combine(paths.Root, "data", "logs");
+        DispatcherUnhandledException += (_, args) =>
+        {
+            var logPath = ErrorLogWriter.Append(logDirectory, "UI线程未处理异常", args.Exception);
+            if (IsRecoverableUiException(args.Exception))
+            {
+                args.Handled = true;
+                return;
+            }
+
+            MessageBox.Show(
+                $"程序遇到无法安全恢复的内部错误，需要重新启动。\n\n{args.Exception.Message}" +
+                (logPath is null ? string.Empty : $"\n\n日志：{logPath}"),
+                "AM-LINK", MessageBoxButton.OK, MessageBoxImage.Error);
+        };
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            ErrorLogWriter.Append(logDirectory, "后台任务未观察异常", args.Exception);
+            args.SetObserved();
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            if (args.ExceptionObject is Exception exception)
+                ErrorLogWriter.Append(logDirectory, "进程级未处理异常", exception);
+        };
+    }
+
+    private static bool IsRecoverableUiException(Exception exception) =>
+        exception is OperationCanceledException or ObjectDisposedException;
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         var paths = AppPaths.Create(AppRootResolver.ResolveDefault());
         paths.EnsureDirectories();
+        RegisterGlobalExceptionGuard(paths);
         if (e.Args.Any(argument => string.Equals(argument, "--headless-demo", StringComparison.OrdinalIgnoreCase)))
         {
             var marker = Path.Combine(paths.Root, "data", "demo-last-run.txt");
@@ -41,6 +76,7 @@ public partial class App : Application
         {
             var repository = new SqliteTimelineRepository(Path.Combine(paths.DatabaseDirectory, "timeline.db"));
             await repository.InitializeAsync();
+            await repository.BackupAsync(Path.Combine(paths.DatabaseDirectory, "backups"));
             await repository.MarkOpenSessionsInterruptedAsync(DateTimeOffset.Now);
             await new AudioRetentionService(paths, TimeSpan.FromDays(14), TimeSpan.FromHours(24))
                 .SweepAsync(DateTimeOffset.Now);
