@@ -93,16 +93,29 @@ public sealed class CloudClassroomSyncService(string queuePath) : IClassroomSync
 
     private async Task PollAsync(CancellationToken cancellationToken)
     {
+        var reconnectAttempts = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
                 await FlushQueueAsync(cancellationToken); await RefreshAsync(cancellationToken);
                 ConnectionStatusChanged?.Invoke(this, "云端课堂已连接");
+                reconnectAttempts = 0;
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
-            { IsConnected = false; ConnectionStatusChanged?.Invoke(this, "云端重连中，本地同传不受影响"); }
-            try { await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken); } catch (OperationCanceledException) { break; }
+            {
+                IsConnected = false;
+                reconnectAttempts++;
+                ConnectionStatusChanged?.Invoke(this, "云端重连中，待发送内容已保存在本机；本地同传不受影响");
+            }
+            try
+            {
+                var delay = reconnectAttempts == 0
+                    ? TimeSpan.FromSeconds(2)
+                    : ClassroomOutboxPolicy.RetryDelay(reconnectAttempts - 1);
+                await Task.Delay(delay, cancellationToken);
+            }
+            catch (OperationCanceledException) { break; }
         }
     }
 
@@ -116,7 +129,26 @@ public sealed class CloudClassroomSyncService(string queuePath) : IClassroomSync
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            foreach (var item in _queue.ToArray()) { await SendAsync(item.Kind, item.Json, cancellationToken); _queue.Remove(item); }
+            while (_queue.Count > 0)
+            {
+                var item = _queue[0];
+                try { await SendAsync(item.Kind, item.Json, cancellationToken); _queue.RemoveAt(0); }
+                catch (Exception failure) when (failure is ClassroomServerException or HttpRequestException or TaskCanceledException)
+                {
+                    if (ClassroomOutboxPolicy.Decide(failure, item.Attempts) == OutboxRetryDecision.Drop)
+                    {
+                        // 服务器明确拒绝或重试次数用尽：这一条永远发不出去，
+                        // 丢弃它让后面的消息继续补传，而不是每 2 秒无限重试同一条。
+                        _queue.RemoveAt(0);
+                        ConnectionStatusChanged?.Invoke(this, "有一条离线消息无法补传，已跳过；其余消息继续发送");
+                        continue;
+                    }
+
+                    _queue[0] = item with { Attempts = Math.Min(item.Attempts + 1, 1_000_000) };
+                    await SaveQueueAsync(cancellationToken);
+                    throw;
+                }
+            }
             await SaveQueueAsync(cancellationToken); IsConnected = true;
         }
         finally { _gate.Release(); }
@@ -141,9 +173,11 @@ public sealed class CloudClassroomSyncService(string queuePath) : IClassroomSync
         catch (JsonException) { }
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound && string.IsNullOrWhiteSpace(message))
             message = "课堂码不存在或课堂已经结束";
-        throw new InvalidOperationException(string.IsNullOrWhiteSpace(message) ? $"课堂服务返回 {(int)response.StatusCode}" : message);
+        throw new ClassroomServerException(
+            string.IsNullOrWhiteSpace(message) ? $"课堂服务返回 {(int)response.StatusCode}" : message,
+            response.StatusCode);
     }
     public async ValueTask DisposeAsync() { _polling?.Cancel(); _polling?.Dispose(); _http.Dispose(); _gate.Dispose(); await Task.CompletedTask; }
-    private sealed record QueuedClassroomEvent(string Kind,string Json);
+    private sealed record QueuedClassroomEvent(string Kind, string Json, int Attempts = 0);
     private sealed record SchoolAiResponse(string Answer);
 }
