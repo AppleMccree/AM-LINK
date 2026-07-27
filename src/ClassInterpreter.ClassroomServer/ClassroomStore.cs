@@ -135,6 +135,12 @@ public sealed class ClassroomStore(IConfiguration configuration)
         return (id, token);
     }
 
+    public async Task<long> CountActiveParticipantsAsync(Guid lessonId, TimeSpan activeWindow) =>
+        await ScalarAsync<long>(
+            "SELECT COUNT(*) FROM participants WHERE lesson_id=$lesson AND last_seen >= $cutoff",
+            ("$lesson", lessonId),
+            ("$cutoff", DateTimeOffset.UtcNow.Subtract(activeWindow)));
+
     public async Task<Guid?> AuthenticateParticipantAsync(Guid lessonId, string token, bool touch = true)
     {
         await using var connection = await OpenAsync();
