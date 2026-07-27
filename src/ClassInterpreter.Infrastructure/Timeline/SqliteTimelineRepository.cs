@@ -195,6 +195,45 @@ public sealed class SqliteTimelineRepository
         return results;
     }
 
+    /// <summary>
+    /// æ¯å¤©æœ€å¤šç”Ÿæˆä¸€ä»½å®Œæ•´æ•°æ®åº“å¤‡ä»½ï¼ˆVACUUM INTO çƒ­å¤‡ä»½ï¼Œä¸é”å†™å…¥ï¼‰ï¼Œ
+    /// åªä¿ç•™æœ€è¿‘ keepCount ä»½ï¼›å·²å­˜åœ¨å½“å¤©å¤‡ä»½æ—¶ç›´æ¥è·³è¿‡ã€‚
+    /// </summary>
+    public async ValueTask<string?> BackupAsync(string backupDirectory, int keepCount = 7, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(backupDirectory);
+        Directory.CreateDirectory(backupDirectory);
+        var target = Path.Combine(backupDirectory, $"timeline-backup-{DateTime.Now:yyyyMMdd}.db");
+        if (!File.Exists(target))
+        {
+            await using var connection = await OpenAsync(cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = "VACUUM INTO $path;";
+            command.Parameters.AddWithValue("$path", target);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        foreach (var stale in Directory.GetFiles(backupDirectory, "timeline-backup-*.db")
+                     .OrderByDescending(path => path, StringComparer.OrdinalIgnoreCase)
+                     .Skip(Math.Max(1, keepCount)))
+        {
+            File.Delete(stale);
+        }
+
+        return target;
+    }
+
+    /// <summary>åˆ é™¤æ•´èŠ‚è¯¾æ—¶è°ƒç”¨ï¼šæ¸…æ‰è¯¥è¯¾çš„é—®AIè®°å½•ï¼Œé¿å…ç•™ä¸‹æ— ä¸»æ•°æ®ã€‚</summary>
+    public async ValueTask DeleteAiQuestionsForLessonAsync(string lessonKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(lessonKey);
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM ai_questions WHERE lesson_key=$lesson;";
+        command.Parameters.AddWithValue("$lesson", lessonKey);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     public async ValueTask DeleteSessionAsync(Guid sessionId, CancellationToken cancellationToken = default)
     {
         await using var connection = await OpenAsync(cancellationToken);
@@ -261,4 +300,295 @@ public sealed class SqliteTimelineRepository
         command.Parameters.AddWithValue("$timestamp", record.TranscriptTimestamp is null ? DBNull.Value : record.TranscriptTimestamp);
         command.Parameters.AddWithValue("$model", record.Model);
         command.Parameters.AddWithValue("$status", (int)record.Status);
-   ï½m¢G§²ÚîÆ­yÖÇ”Æ—7CÄ•W6vU&V6÷&CãâvWD•W6vT7–æ2€¢FFTöæÇ“òg&öÒÒçVÆÂÀ¢6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶VâÒFVfVÇB¢°¢f"&W7VÇG2ÒæWrÆ—7CÄ•W6vU&V6÷&Câ‚“°¢v—BW6–ærf"6öææV7F–öâÒv—B÷Vä7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v—BW6–ærf"6öÖÖæBÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢6öÖÖæBä6öÖÖæEFW‡BÒg&öÒ—2çVÆÀ¢ò%4TÄT5BF’Æ¶–æBÆÖöFVÂÇ&WVW7Eö6÷VçBÆf–ÇW&Uö6÷VçBÆ–çWEö6†&7FW'2Æ÷WGWEö6†&7FW'2ÆW7F–ÖFVEö–çWE÷Fö¶Vç2ÆW7F–ÖFVEö÷WGWE÷Fö¶Vç2ÆVF–õöÖ–ÆÆ—6V6öæG2e$ôÒ•÷W6vUöF–Ç’õ$DU"%’F’DU42Æ¶–æC² ¢¢%4TÄT5BF’Æ¶–æBÆÖöFVÂÇ&WVW7Eö6÷VçBÆf–ÇW&Uö6÷VçBÆ–çWEö6†&7FW'2Æ÷WGWEö6†&7FW'2ÆW7F–ÖFVEö–çWE÷Fö¶Vç2ÆW7F–ÖFVEö÷WGWE÷Fö¶Vç2ÆVF–õöÖ–ÆÆ—6V6öæG2e$ôÒ•÷W6vUöF–Ç’t„U$RF’ãÒFg&öÒõ$DU"%’F’DU42Æ¶–æC²#°¢–b†g&öÒ—2æ÷BçVÆÂ’6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"Fg&öÒ"Âg&öÒåfÇVRåFõ7G&–ær‚'———’ÔÔÒÖFB"’“°¢v—BW6–ærf"&VFW"Òv—B6öÖÖæBäW†V7WFU&VFW$7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v†–ÆR†v—B&VFW"å&VD7–æ2†6æ6VÆÆF–öåFö¶Vâ’¢&W7VÇG2äFB†æWr•W6vU&V6÷&B€¢FFTöæÇ’å'6TW†7B‡&VFW"ävWE7G&–ærƒ’Â'———’ÔÔÒÖFB"’Â„•W6vT¶–æB—&VFW"ävWD–çC3"ƒ’Â&VFW"ävWE7G&–ærƒ"’À¢&VFW"ävWD–çCcBƒ2’Â&VFW"ävWD–çCcBƒB’Â&VFW"ävWD–çCcBƒR’Â&VFW"ävWD–çCcBƒb’À¢&VFW"ävWD–çCcBƒr’Â&VFW"ävWD–çCcBƒ‚’Â&VFW"ävWD–çCcBƒ’’’“°¢&WGW&â&W7VÇG3°¢Ğ ¢V&Æ–27–æ2fÇVUF6³Ä•&VDöæÇ”Æ—7CÄ•VW7F–öå&V6÷&CãâvWD•VW7F–öç47–æ2€¢7G&–ærÆW76öä¶W’À¢6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶VâÒFVfVÇB¢°¢f"&W7VÇG2ÒæWrÆ—7CÄ•VW7F–öå&V6÷&Câ‚“°¢v—BW6–ærf"6öææV7F–öâÒv—B÷Vä7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v—BW6–ærf"6öÖÖæBÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢6öÖÖæBä6öÖÖæEFW‡BÒ"" ¢4TÄT5B–BÂÆW76öåö¶W’Â6÷W'6Uö–BÂ6¶VEöBÂVW7F–öâÂ6VÆV7FVE÷FW‡BÂç7vW"À¢6Æ–FU÷vRÂG&ç67&—E÷F–ÖW7F×ÂÖöFVÂÂ7FGW2ÂW'&÷ ¢e$ôÒ•÷VW7F–öç2t„U$RÆW76öåö¶W“ÒFÆW76öâõ$DU"%’6¶VEöC°¢""#°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FÆW76öâ"ÂÆW76öä¶W’“°¢v—BW6–ærf"&VFW"Òv—B6öÖÖæBäW†V7WFU&VFW$7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v†–ÆR†v—B&VFW"å&VD7–æ2†6æ6VÆÆF–öåFö¶Vâ’¢°¢&W7VÇG2äFB†æWr•VW7F–öå&V6÷&B€¢wV–Bå'6R‡&VFW"ävWE7G&–ærƒ’’Â&VFW"ävWE7G&–ærƒ’À¢&VFW"ä—4D$çVÆÂƒ"’òçVÆÂ¢wV–Bå'6R‡&VFW"ävWE7G&–ærƒ"’’Â'6R‡&VFW"ävWE7G&–ærƒ2’’À¢&VFW"ävWE7G&–ærƒB’Â&VFW"ä—4D$çVÆÂƒR’òçVÆÂ¢&VFW"ävWE7G&–ærƒR’À¢&VFW"ä—4D$çVÆÂƒb’òçVÆÂ¢&VFW"ävWE7G&–ærƒb’Â&VFW"ä—4D$çVÆÂƒr’òçVÆÂ¢&VFW"ävWD–çC3"ƒr’À¢&VFW"ä—4D$çVÆÂƒ‚’òçVÆÂ¢&VFW"ävWE7G&–ærƒ‚’Â&VFW"ävWE7G&–ærƒ’’À¢„•VW7F–öå7FGW2—&VFW"ävWD–çC3"ƒ’Â&VFW"ä—4D$çVÆÂƒ’òçVÆÂ¢&VFW"ävWE7G&–ærƒ’’“°¢Ğ¢&WGW&â&W7VÇG3°¢Ğ ¢V&Æ–27–æ2fÇVUF6²W6W'EG&ç67&—D7–æ2…G&ç67&—E6VvÖVçB6VvÖVçBÂ6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶VâÒFVfVÇB¢°¢v—BW6–ærf"6öææV7F–öâÒv—B÷Vä7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v—BW6–ærf"6öÖÖæBÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢6öÖÖæBä6öÖÖæEFW‡BÒ"" ¢”å4U%B”åDòG&ç67&—G2€¢–BÂ6W76–öåö–BÂ6WVVæ6RÂ7F'E÷F–6·2ÂVæE÷F–6·2Â6÷W&6U÷FW‡BÀ¢6†–æW6U÷FW‡BÂF&vWE÷FW‡BÂG&ç6ÆF–öåöF—&V7F–öâÂ—5öf–æÂÂÆæwVvRÂ6öæf–FVæ6RÀ¢f–WvVE÷6Æ–FU÷vRÂ6æF–FFU÷6Æ–FU÷vRÂ6Æ–FUöÖF6…ö6öæf–FVæ6RÂ6Æ–FUöÖF6…öWf–FVæ6RÂ6Æ–FUöföÆÆ÷uö7F–öâ¢dÅTU2‚F–BÂG6W76–öâÂG6WVVæ6RÂG7F'BÂFVæBÂG6÷W&6RÀ¢F6†–æW6RÂGF&vWBÂFF—&V7F–öâÂFf–æÂÂFÆæwVvRÂF6öæf–FVæ6RÀ¢Gf–WvVEvRÂF6æF–FFUvRÂFÖF6„6öæf–FVæ6RÂFÖF6„Wf–FVæ6RÂFföÆÆ÷t7F–öâ¢ôâ4ôädÄ”5B†–B’DòUDDR4U@¢6WVVæ6SÖW†6ÇVFVBç6WVVæ6RÀ¢7F'E÷F–6·3ÖW†6ÇVFVBç7F'E÷F–6·2À¢VæE÷F–6·3ÖW†6ÇVFVBæVæE÷F–6·2À¢6÷W&6U÷FW‡CÖW†6ÇVFVBç6÷W&6U÷FW‡BÀ¢6†–æW6U÷FW‡CÖW†6ÇVFVBæ6†–æW6U÷FW‡BÀ¢F&vWE÷FW‡CÖW†6ÇVFVBçF&vWE÷FW‡BÀ¢G&ç6ÆF–öåöF—&V7F–öãÖW†6ÇVFVBçG&ç6ÆF–öåöF—&V7F–öâÀ¢—5öf–æÃÖW†6ÇVFVBæ—5öf–æÂÀ¢ÆæwVvSÖW†6ÇVFVBæÆæwVvRÀ¢6öæf–FVæ6SÖW†6ÇVFVBæ6öæf–FVæ6RÀ¢f–WvVE÷6Æ–FU÷vSÖW†6ÇVFVBçf–WvVE÷6Æ–FU÷vRÀ¢6æF–FFU÷6Æ–FU÷vSÖW†6ÇVFVBæ6æF–FFU÷6Æ–FU÷vRÀ¢6Æ–FUöÖF6…ö6öæf–FVæ6SÖW†6ÇVFVBç6Æ–FUöÖF6…ö6öæf–FVæ6RÀ¢6Æ–FUöÖF6…öWf–FVæ6SÖW†6ÇVFVBç6Æ–FUöÖF6…öWf–FVæ6RÀ¢6Æ–FUöföÆÆ÷uö7F–öãÖW†6ÇVFVBç6Æ–FUöföÆÆ÷uö7F–öã°¢""#°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"F–B"Â6VvÖVçBä–BåFõ7G&–ær‚$B"’“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"G6W76–öâ"Â6VvÖVçBå6W76–öä–BåFõ7G&–ær‚$B"’“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"G6WVVæ6R"Â6VvÖVçBå6WVVæ6R“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"G7F'B"Â6VvÖVçBå7F'BåF–6·2“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FVæB"Â6VvÖVçBäVæBåF–6·2“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"G6÷W&6R"Â6VvÖVçBå6÷W&6UFW‡B“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"F6†–æW6R"Â6VvÖVçBä6†–æW6UFW‡B—2çVÆÂòD$çVÆÂåfÇVR¢6VvÖVçBä6†–æW6UFW‡B“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"GF&vWB"Â6VvÖVçBåF&vWEFW‡B—2çVÆÂòD$çVÆÂåfÇVR¢6VvÖVçBåF&vWEFW‡B“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FF—&V7F–öâ"Â6VvÖVçBåG&ç6ÆF–öäF—&V7F–öä–B“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"Ff–æÂ"Â6VvÖVçBä—4f–æÂò¢“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FÆæwVvR"Â6VvÖVçBäÆæwVvR“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"F6öæf–FVæ6R"Â6VvÖVçBä6öæf–FVæ6R—2çVÆÂòD$çVÆÂåfÇVR¢6VvÖVçBä6öæf–FVæ6RåfÇVR“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"Gf–WvVEvR"Â6VvÖVçBåf–WvVE6Æ–FUvR—2çVÆÂòD$çVÆÂåfÇVR¢6VvÖVçBåf–WvVE6Æ–FUvRåfÇVR“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"F6æF–FFUvR"Â6VvÖVçBä6æF–FFU6Æ–FUvR—2çVÆÂòD$çVÆÂåfÇVR¢6VvÖVçBä6æF–FFU6Æ–FUvRåfÇVR“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FÖF6„6öæf–FVæ6R"Â6VvÖVçBå6Æ–FTÖF6„6öæf–FVæ6R—2çVÆÂòD$çVÆÂåfÇVR¢6VvÖVçBå6Æ–FTÖF6„6öæf–FVæ6RåfÇVR“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FÖF6„Wf–FVæ6R"Â6VvÖVçBå6Æ–FTÖF6„Wf–FVæ6R—2çVÆÂòD$çVÆÂåfÇVR¢6VvÖVçBå6Æ–FTÖF6„Wf–FVæ6R“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FföÆÆ÷t7F–öâ"Â†–çB—6VvÖVçBå6Æ–FTföÆÆ÷t7F–öâ“°¢v—B6öÖÖæBäW†V7WFTæöåVW'”7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢Ğ ¢V&Æ–27–æ2fÇVUF6²WFFUG&ç67&—E6Æ–FTÆ–æ´7–æ2€¢wV–BG&ç67&—D–BÀ¢–çBf–WvVE6Æ–FUvRÀ¢6Æ–FTföÆÆ÷t7F–öâ7F–öâÀ¢6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶VâÒFVfVÇB¢°¢v—BW6–ærf"6öææV7F–öâÒv—B÷Vä7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v—BW6–ærf"6öÖÖæBÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢6öÖÖæBä6öÖÖæEFW‡BÒ"" ¢UDDRG&ç67&—G0¢4UBf–WvVE÷6Æ–FU÷vSÒGf–WvVEvRÂ6Æ–FUöföÆÆ÷uö7F–öãÒF7F–öà¢t„U$R–CÒF–C°¢""#°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"F–B"ÂG&ç67&—D–BåFõ7G&–ær‚$B"’“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"Gf–WvVEvR"Âf–WvVE6Æ–FUvR“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"F7F–öâ"Â†–çB–7F–öâ“°¢v—B6öÖÖæBäW†V7WFTæöåVW'”7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢Ğ ¢V&Æ–27–æ2fÇVUF6³Ä•&VDöæÇ”Æ—7CÅG&ç67&—E6VvÖVçCãâvWEG&ç67&—G47–æ2€¢wV–B6W76–öä–BÀ¢6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶VâÒFVfVÇB¢°¢f"&W7VÇG2ÒæWrÆ—7CÅG&ç67&—E6VvÖVçCâ‚“°¢v—BW6–ærf"6öææV7F–öâÒv—B÷Vä7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v—BW6–ærf"6öÖÖæBÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢6öÖÖæBä6öÖÖæEFW‡BÒ"" ¢4TÄT5B–BÂ6W76–öåö–BÂ6WVVæ6RÂ7F'E÷F–6·2ÂVæE÷F–6·2Â6÷W&6U÷FW‡BÀ¢6†–æW6U÷FW‡BÂF&vWE÷FW‡BÂG&ç6ÆF–öåöF—&V7F–öâÂ—5öf–æÂÂÆæwVvRÂ6öæf–FVæ6RÀ¢f–WvVE÷6Æ–FU÷vRÂ6æF–FFU÷6Æ–FU÷vRÂ6Æ–FUöÖF6…ö6öæf–FVæ6RÂ6Æ–FUöÖF6…öWf–FVæ6RÂ6Æ–FUöföÆÆ÷uö7F–öà¢e$ôÒG&ç67&—G2t„U$R6W76–öåö–CÒG6W76–öâõ$DU"%’6WVVæ6RÂ7F'E÷F–6·3°¢""#°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"G6W76–öâ"Â6W76–öä–BåFõ7G&–ær‚$B"’“°¢v—BW6–ærf"&VFW"Òv—B6öÖÖæBäW†V7WFU&VFW$7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v†–ÆR†v—B&VFW"å&VD7–æ2†6æ6VÆÆF–öåFö¶Vâ’¢°¢&W7VÇG2äFB†æWrG&ç67&—E6VvÖVçB€¢wV–Bå'6R‡&VFW"ävWE7G&–ærƒ’’ÂwV–Bå'6R‡&VFW"ävWE7G&–ærƒ’’Â&VFW"ävWD–çCcBƒ"’À¢F–ÖU7âäg&öÕF–6·2‡&VFW"ävWD–çCcBƒ2’’ÂF–ÖU7âäg&öÕF–6·2‡&VFW"ävWD–çCcBƒB’’À¢&VFW"ävWE7G&–ærƒR’Â&VFW"ä—4D$çVÆÂƒb’òçVÆÂ¢&VFW"ävWE7G&–ærƒb’À¢&VFW"ävWD–çCcBƒ’’ÒÂ&VFW"ävWE7G&–ærƒ’Â&VFW"ä—4D$çVÆÂƒ’òçVÆÂ¢&VFW"ävWDF÷V&ÆRƒ’¢°¢F&vWEFW‡BÒ&VFW"ä—4D$çVÆÂƒr’òçVÆÂ¢&VFW"ävWE7G&–ærƒr’À¢G&ç6ÆF–öäF—&V7F–öä–BÒ&VFW"ävWE7G&–ærƒ‚’À¢f–WvVE6Æ–FUvRÒ&VFW"ä—4D$çVÆÂƒ"’òçVÆÂ¢&VFW"ävWD–çC3"ƒ"’À¢6æF–FFU6Æ–FUvRÒ&VFW"ä—4D$çVÆÂƒ2’òçVÆÂ¢&VFW"ävWD–çC3"ƒ2’À¢6Æ–FTÖF6„6öæf–FVæ6RÒ&VFW"ä—4D$çVÆÂƒB’òçVÆÂ¢&VFW"ävWDF÷V&ÆRƒB’À¢6Æ–FTÖF6„Wf–FVæ6RÒ&VFW"ä—4D$çVÆÂƒR’òçVÆÂ¢&VFW"ävWE7G&–ærƒR’À¢6Æ–FTföÆÆ÷t7F–öâÒ&VFW"ä—4D$çVÆÂƒb’ò6Æ–FTföÆÆ÷t7F–öâäæöæR¢…6Æ–FTföÆÆ÷t7F–öâ—&VFW"ävWD–çC3"ƒb¢Ò“°¢Ğ ¢&WGW&â&W7VÇG3°¢Ğ ¢V&Æ–27–æ2fÇVUF6³Å6W76–öãóâvWE6W76–öä7–æ2„wV–B6W76–öä–BÂ6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶VâÒFVfVÇB¢°¢v—BW6–ærf"6öææV7F–öâÒv—B÷Vä7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v—BW6–ærf"6öÖÖæBÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢6öÖÖæBä6öÖÖæEFW‡BÒ%4TÄT5B–BÂ6÷W'6UöæÖRÂ7F'FVEöBÂVæFVEöBÂ7FGW2Â6÷W'6Uö–BÂÖFW&–Å÷F‚ÂÖFW&–Å÷G—RÂ7GVG•÷6µ÷F‚ÂÆW76öåö¶W’ÂÆ7E÷6Æ–FU÷vRe$ôÒ6W76–öç2t„U$R–CÒF–C²#°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"F–B"Â6W76–öä–BåFõ7G&–ær‚$B"’“°¢v—BW6–ærf"&VFW"Òv—B6öÖÖæBäW†V7WFU&VFW$7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢–b‚v—B&VFW"å&VD7–æ2†6æ6VÆÆF–öåFö¶Vâ’¢°¢&WGW&âçVÆÃ°¢Ğ ¢&WGW&â&VE6W76–öâ‡&VFW"“°¢Ğ ¢V&Æ–27–æ2fÇVUF6²Ö&´÷Vå6W76–öç4–çFW''WFVD7–æ2€¢FFUF–ÖTöfg6WB&V6÷fW&VDBÀ¢6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶VâÒFVfVÇB¢°¢v—BW6–ærf"6öææV7F–öâÒv—B÷Vä7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v—BW6–ærf"6öÖÖæBÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢6öÖÖæBä6öÖÖæEFW‡BÒ"" ¢UDDR6W76–öç24UB7FGW3ÒF–çFW''WFVBÂVæFVEöCÒFVæFV@¢t„U$R7FGW2”â‚G&W&–ærÂFÆ—fRÂGW6VB“°¢""#°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"F–çFW''WFVB"Â†–çB•6W76–öå7FGW2ä–çFW''WFVB“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FVæFVB"Âf÷&ÖB‡&V6÷fW&VDB’“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"G&W&–ær"Â†–çB•6W76–öå7FGW2å&W&–ær“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"FÆ—fR"Â†–çB•6W76–öå7FGW2äÆ—fR“°¢6öÖÖæBå&ÖWFW'2äFEv—F…fÇVR‚"GW6VB"Â†–çB•6W76–öå7FGW2åW6VB“°¢v—B6öÖÖæBäW†V7WFTæöåVW'”7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢Ğ ¢&—fFR7–æ2fÇVUF6³Å7Æ—FT6öææV7F–öãâ÷Vä7–æ2„6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶Vâ¢°¢f"6öææV7F–öâÒæWr7Æ—FT6öææV7F–öâ…ö6öææV7F–öå7G&–ær“°¢v—B6öææV7F–öâä÷Vä7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢&WGW&â6öææV7F–öã°¢Ğ ¢&—fFR7FF–27–æ2fÇVUF6²Vç7W&U6W76–öä6öÇVÖä7–æ2…7Æ—FT6öææV7F–öâ6öææV7F–öâÂ7G&–ær6öÇVÖäæÖRÂ7G&–ærFVf–æ—F–öâÂ6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶Vâ¢°¢v—BW6–ærf"–ç7V7BÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢–ç7V7Bä6öÖÖæEFW‡BÒ%$tÔF&ÆUö–æfò‡6W76–öç2“²#°¢v—BW6–ærf"&VFW"Òv—B–ç7V7BäW†V7WFU&VFW$7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v†–ÆR†v—B&VFW"å&VD7–æ2†6æ6VÆÆF–öåFö¶Vâ’¢–b‡7G&–æräWVÇ2‡&VFW"ävWE7G&–ærƒ’Â6öÇVÖäæÖRÂ7G&–æt6ö×&—6öâä÷&F–æÄ–væ÷&T66R’’&WGW&ã°¢v—B&VFW"äF—7÷6T7–æ2‚“°¢v—BW6–ærf"ÇFW"Ò6öææV7F–öâä7&VFT6öÖÖæB‚“°¢ÇFW"ä6öÖÖæEFW‡BÒB$ÅDU"D$ÄR6W76–öç2DB4ôÅTÔâ¶6öÇVÖäæÖWÒ¶FVf–æ—F–öçÓ²#°¢v—BÇFW"äW†V7WFTæöåVW'”7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢Ğ ¢&—fFR7FF–27–æ2fÇVUF6²Ö–w&FTÆVv7”6÷W'6W47–æ2…7Æ—FT6öææV7F–öâ6öææV7F–öâÂ6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶Vâ¢°¢v—BW6–ærf"6öÖÖæBÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢6öÖÖæBä6öÖÖæEFW‡BÒ"" ¢”å4U%B”åDò6÷W'6W2†–BÂæÖRÂ7&VFVEöBÂ—5ö&6†—fVB¢4TÄT5BÆ÷vW"††W‚‡&æFöÖ&Æö"ƒB’’ÇÂrÒrÇÂ†W‚‡&æFöÖ&Æö"ƒ"’’ÇÂrÓBrÇÂ7V'7G"††W‚‡&æFöÖ&Æö"ƒ"’’Ã"’ÇÂrÖrÇÂ7V'7G"††W‚‡&æFöÖ&Æö"ƒ"’’Ã"’ÇÂrÒrÇÂ†W‚‡&æFöÖ&Æö"ƒb’’’À¢G&–Ò†6÷W'6UöæÖR’ÂÖ–â‡7F'FVEöB’Â ¢e$ôÒ6W76–öç2t„U$R6÷W'6Uö–B•2åTÄÂu$õU%’G&–Ò†6÷W'6UöæÖR“°¢UDDR6W76–öç24UB6÷W'6Uö–CÒ…4TÄT5B–Be$ôÒ6÷W'6W2t„U$RæÖS×G&–Ò‡6W76–öç2æ6÷W'6UöæÖR’4ôÄÄDRäô44Rõ$DU"%’7&VFVEöBÄ”Ô•B¢t„U$R6÷W'6Uö–B•2åTÄÃ°¢""#°¢v—B6öÖÖæBäW†V7WFTæöåVW'”7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢Ğ ¢&—fFR7FF–27–æ2fÇVUF6²Vç7W&UG&ç67&—D6öÇVÖä7–æ2€¢7Æ—FT6öææV7F–öâ6öææV7F–öâÀ¢7G&–ær6öÇVÖäæÖRÀ¢7G&–ærFVf–æ—F–öâÀ¢6æ6VÆÆF–öåFö¶Vâ6æ6VÆÆF–öåFö¶Vâ¢°¢v—BW6–ærf"–ç7V7BÒ6öææV7F–öâä7&VFT6öÖÖæB‚“°¢–ç7V7Bä6öÖÖæEFW‡BÒ%$tÔF&ÆUö–æfò‡G&ç67&—G2“²#°¢v—BW6–ærf"&VFW"Òv—B–ç7V7BäW†V7WFU&VFW$7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢v†–ÆR†v—B&VFW"å&VD7–æ2†6æ6VÆÆF–öåFö¶Vâ’¢°¢–b‡7G&–æräWVÇ2‡&VFW"ävWE7G&–ærƒ’Â6öÇVÖäæÖRÂ7G&–æt6ö×&—6öâä÷&F–æÄ–væ÷&T66R’¢°¢&WGW&ã°¢Ğ¢Ğ ¢v—B&VFW"äF—7÷6T7–æ2‚“°¢v—BW6–ærf"ÇFW"Ò6öææV7F–öâä7&VFT6öÖÖæB‚“°¢ÇFW"ä6öÖÖæEFW‡BÒB$ÅDU"D$ÄRG&ç67&—G2DB4ôÅTÔâ¶6öÇVÖäæÖWÒ¶FVf–æ—F–öçÓ²#°¢v—BÇFW"äW†V7WFTæöåVW'”7–æ2†6æ6VÆÆF–öåFö¶Vâ“°¢Ğ ¢&—fFR7FF–26W76–öâ&VE6W76–öâ…7Æ—FTFF&VFW"&VFW"’ÓâæWr€¢wV–Bå'6R‡&VFW"ävWE7G&–ærƒ’’Â&VFW"ävWE7G&–ærƒ’Â'6R‡&VFW"ävWE7G&–ærƒ"’’À¢&VFW"ä—4D$çVÆÂƒ2’òçVÆÂ¢'6R‡&VFW"ävWE7G&–ærƒ2’’Â…6W76–öå7FGW2—&VFW"ävWD–çC3"ƒB’¢°¢6÷W'6T–BÒ&VFW"ä—4D$çVÆÂƒR’òçVÆÂ¢wV–Bå'6R‡&VFW"ävWE7G&–ærƒR’’À¢ÖFW&–ÅF‚Ò&VFW"ä—4D$çVÆÂƒb’òçVÆÂ¢&VFW"ävWE7G&–ærƒb’À¢ÖFW&–ÅG—RÒ&VFW"ä—4D$çVÆÂƒr’òçVÆÂ¢&VFW"ävWE7G&–ærƒr’À¢7GVG•6µF‚Ò&VFW"ä—4D$çVÆÂƒ‚’òçVÆÂ¢&VFW"ävWE7G&–ærƒ‚’À¢ÆW76öä¶W’Ò&VFW"ä—4D$çVÆÂƒ’’òçVÆÂ¢&VFW"ävWE7G&–ærƒ’’À¢Æ7E6Æ–FUvRÒ&VFW"ä—4D$çVÆÂƒ’òçVÆÂ¢&VFW"ävWD–çC3"ƒ¢Ó° ¢&—fFR7FF–27G&–ærf÷&ÖB„FFUF–ÖTöfg6WBfÇVR’ÓâfÇVRåFõ7G&–ær‚$ò"Â7VÇGW&T–æfòä–çf&–çD7VÇGW&R“° ¢&—fFR7FF–2FFUF–ÖTöfg6WB'6R‡7G&–ærfÇVR’Óà¢FFUF–ÖTöfg6WBå'6R‡fÇVRÂ7VÇGW&T–æfòä–çf&–çD7VÇGW&RÂFFUF–ÖU7G–ÆW2å&÷VæGG&—¶–æB“°§Ğ
+        command.Parameters.AddWithValue("$error", record.Error is null ? DBNull.Value : record.Error);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async ValueTask RecordAiUsageAsync(AiUsageRecord record, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO ai_usage_daily(day, kind, model, request_count, failure_count, input_characters,
+                                       output_characters, estimated_input_tokens, estimated_output_tokens, audio_milliseconds)
+            VALUES($day,$kind,$model,$requests,$failures,$input,$output,$inputTokens,$outputTokens,$audio)
+            ON CONFLICT(day,kind,model) DO UPDATE SET
+                request_count=request_count+excluded.request_count,
+                failure_count=failure_count+excluded.failure_count,
+                input_characters=input_characters+excluded.input_characters,
+                output_characters=output_characters+excluded.output_characters,
+                estimated_input_tokens=estimated_input_tokens+excluded.estimated_input_tokens,
+                estimated_output_tokens=estimated_output_tokens+excluded.estimated_output_tokens,
+                audio_milliseconds=audio_milliseconds+excluded.audio_milliseconds;
+            """;
+        command.Parameters.AddWithValue("$day", record.Day.ToString("yyyy-MM-dd"));
+        command.Parameters.AddWithValue("$kind", (int)record.Kind);
+        command.Parameters.AddWithValue("$model", record.Model);
+        command.Parameters.AddWithValue("$requests", record.RequestCount);
+        command.Parameters.AddWithValue("$failures", record.FailureCount);
+        command.Parameters.AddWithValue("$input", record.InputCharacters);
+        command.Parameters.AddWithValue("$output", record.OutputCharacters);
+        command.Parameters.AddWithValue("$inputTokens", record.EstimatedInputTokens);
+        command.Parameters.AddWithValue("$outputTokens", record.EstimatedOutputTokens);
+        command.Parameters.AddWithValue("$audio", record.AudioMilliseconds);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async ValueTask<IReadOnlyList<AiUsageRecord>> GetAiUsageAsync(
+        DateOnly? from = null,
+        CancellationToken cancellationToken = default)
+    {
+        var results = new List<AiUsageRecord>();
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = from is null
+            ? "SELECT day,kind,model,request_count,failure_count,input_characters,output_characters,estimated_input_tokens,estimated_output_tokens,audio_milliseconds FROM ai_usage_daily ORDER BY day DESC,kind;"
+            : "SELECT day,kind,model,request_count,failure_count,input_characters,output_characters,estimated_input_tokens,estimated_output_tokens,audio_milliseconds FROM ai_usage_daily WHERE day >= $from ORDER BY day DESC,kind;";
+        if (from is not null) command.Parameters.AddWithValue("$from", from.Value.ToString("yyyy-MM-dd"));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            results.Add(new AiUsageRecord(
+                DateOnly.ParseExact(reader.GetString(0), "yyyy-MM-dd"), (AiUsageKind)reader.GetInt32(1), reader.GetString(2),
+                reader.GetInt64(3), reader.GetInt64(4), reader.GetInt64(5), reader.GetInt64(6),
+                reader.GetInt64(7), reader.GetInt64(8), reader.GetInt64(9)));
+        return results;
+    }
+
+    public async ValueTask<IReadOnlyList<AiQuestionRecord>> GetAiQuestionsAsync(
+        string lessonKey,
+        CancellationToken cancellationToken = default)
+    {
+        var results = new List<AiQuestionRecord>();
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT id, lesson_key, course_id, asked_at, question, selected_text, answer,
+                   slide_page, transcript_timestamp, model, status, error
+            FROM ai_questions WHERE lesson_key=$lesson ORDER BY asked_at;
+            """;
+        command.Parameters.AddWithValue("$lesson", lessonKey);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(new AiQuestionRecord(
+                Guid.Parse(reader.GetString(0)), reader.GetString(1),
+                reader.IsDBNull(2) ? null : Guid.Parse(reader.GetString(2)), Parse(reader.GetString(3)),
+                reader.GetString(4), reader.IsDBNull(5) ? null : reader.GetString(5),
+                reader.IsDBNull(6) ? null : reader.GetString(6), reader.IsDBNull(7) ? null : reader.GetInt32(7),
+                reader.IsDBNull(8) ? null : reader.GetString(8), reader.GetString(9),
+                (AiQuestionStatus)reader.GetInt32(10), reader.IsDBNull(11) ? null : reader.GetString(11)));
+        }
+        return results;
+    }
+
+    public async ValueTask UpsertTranscriptAsync(TranscriptSegment segment, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO transcripts(
+                id, session_id, sequence, start_ticks, end_ticks, source_text,
+                chinese_text, target_text, translation_direction, is_final, language, confidence,
+                viewed_slide_page, candidate_slide_page, slide_match_confidence, slide_match_evidence, slide_follow_action)
+            VALUES ($id, $session, $sequence, $start, $end, $source,
+                    $chinese, $target, $direction, $final, $language, $confidence,
+                    $viewedPage, $candidatePage, $matchConfidence, $matchEvidence, $followAction)
+            ON CONFLICT(id) DO UPDATE SET
+                sequence=excluded.sequence,
+                start_ticks=excluded.start_ticks,
+                end_ticks=excluded.end_ticks,
+                source_text=excluded.source_text,
+                chinese_text=excluded.chinese_text,
+                target_text=excluded.target_text,
+                translation_direction=excluded.translation_direction,
+                is_final=excluded.is_final,
+                language=excluded.language,
+                confidence=excluded.confidence,
+                viewed_slide_page=excluded.viewed_slide_page,
+                candidate_slide_page=excluded.candidate_slide_page,
+                slide_match_confidence=excluded.slide_match_confidence,
+                slide_match_evidence=excluded.slide_match_evidence,
+                slide_follow_action=excluded.slide_follow_action;
+            """;
+        command.Parameters.AddWithValue("$id", segment.Id.ToString("D"));
+        command.Parameters.AddWithValue("$session", segment.SessionId.ToString("D"));
+        command.Parameters.AddWithValue("$sequence", segment.Sequence);
+        command.Parameters.AddWithValue("$start", segment.Start.Ticks);
+        command.Parameters.AddWithValue("$end", segment.End.Ticks);
+        command.Parameters.AddWithValue("$source", segment.SourceText);
+        command.Parameters.AddWithValue("$chinese", segment.ChineseText is null ? DBNull.Value : segment.ChineseText);
+        command.Parameters.AddWithValue("$target", segment.TargetText is null ? DBNull.Value : segment.TargetText);
+        command.Parameters.AddWithValue("$direction", segment.TranslationDirectionId);
+        command.Parameters.AddWithValue("$final", segment.IsFinal ? 1 : 0);
+        command.Parameters.AddWithValue("$language", segment.Language);
+        command.Parameters.AddWithValue("$confidence", segment.Confidence is null ? DBNull.Value : segment.Confidence.Value);
+        command.Parameters.AddWithValue("$viewedPage", segment.ViewedSlidePage is null ? DBNull.Value : segment.ViewedSlidePage.Value);
+        command.Parameters.AddWithValue("$candidatePage", segment.CandidateSlidePage is null ? DBNull.Value : segment.CandidateSlidePage.Value);
+        command.Parameters.AddWithValue("$matchConfidence", segment.SlideMatchConfidence is null ? DBNull.Value : segment.SlideMatchConfidence.Value);
+        command.Parameters.AddWithValue("$matchEvidence", segment.SlideMatchEvidence is null ? DBNull.Value : segment.SlideMatchEvidence);
+        command.Parameters.AddWithValue("$followAction", (int)segment.SlideFollowAction);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async ValueTask UpdateTranscriptSlideLinkAsync(
+        Guid transcriptId,
+        int viewedSlidePage,
+        SlideFollowAction action,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE transcripts
+            SET viewed_slide_page=$viewedPage, slide_follow_action=$action
+            WHERE id=$id;
+            """;
+        command.Parameters.AddWithValue("$id", transcriptId.ToString("D"));
+        command.Parameters.AddWithValue("$viewedPage", viewedSlidePage);
+        command.Parameters.AddWithValue("$action", (int)action);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async ValueTask<IReadOnlyList<TranscriptSegment>> GetTranscriptsAsync(
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var results = new List<TranscriptSegment>();
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT id, session_id, sequence, start_ticks, end_ticks, source_text,
+                   chinese_text, target_text, translation_direction, is_final, language, confidence,
+                   viewed_slide_page, candidate_slide_page, slide_match_confidence, slide_match_evidence, slide_follow_action
+            FROM transcripts WHERE session_id=$session ORDER BY sequence, start_ticks;
+            """;
+        command.Parameters.AddWithValue("$session", sessionId.ToString("D"));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(new TranscriptSegment(
+                Guid.Parse(reader.GetString(0)), Guid.Parse(reader.GetString(1)), reader.GetInt64(2),
+                TimeSpan.FromTicks(reader.GetInt64(3)), TimeSpan.FromTicks(reader.GetInt64(4)),
+                reader.GetString(5), reader.IsDBNull(6) ? null : reader.GetString(6),
+                reader.GetInt64(9) != 0, reader.GetString(10), reader.IsDBNull(11) ? null : reader.GetDouble(11))
+            {
+                TargetText = reader.IsDBNull(7) ? null : reader.GetString(7),
+                TranslationDirectionId = reader.GetString(8),
+                ViewedSlidePage = reader.IsDBNull(12) ? null : reader.GetInt32(12),
+                CandidateSlidePage = reader.IsDBNull(13) ? null : reader.GetInt32(13),
+                SlideMatchConfidence = reader.IsDBNull(14) ? null : reader.GetDouble(14),
+                SlideMatchEvidence = reader.IsDBNull(15) ? null : reader.GetString(15),
+                SlideFollowAction = reader.IsDBNull(16) ? SlideFollowAction.None : (SlideFollowAction)reader.GetInt32(16)
+            });
+        }
+
+        return results;
+    }
+
+    public async ValueTask<Session?> GetSessionAsync(Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT id, course_name, started_at, ended_at, status, course_id, material_path, material_type, study_pack_path, lesson_key, last_slide_page FROM sessions WHERE id=$id;";
+        command.Parameters.AddWithValue("$id", sessionId.ToString("D"));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        return ReadSession(reader);
+    }
+
+    public async ValueTask MarkOpenSessionsInterruptedAsync(
+        DateTimeOffset recoveredAt,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE sessions SET status=$interrupted, ended_at=$ended
+            WHERE status IN ($preparing, $live, $paused);
+            """;
+        command.Parameters.AddWithValue("$interrupted", (int)SessionStatus.Interrupted);
+        command.Parameters.AddWithValue("$ended", Format(recoveredAt));
+        command.Parameters.AddWithValue("$preparing", (int)SessionStatus.Preparing);
+        command.Parameters.AddWithValue("$live", (int)SessionStatus.Live);
+        command.Parameters.AddWithValue("$paused", (int)SessionStatus.Paused);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private async ValueTask<SqliteConnection> OpenAsync(CancellationToken cancellationToken)
+    {
+        var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        return connection;
+    }
+
+    private static async ValueTask EnsureSessionColumnAsync(SqliteConnection connection, string columnName, string definition, CancellationToken cancellationToken)
+    {
+        await using var inspect = connection.CreateCommand();
+        inspect.CommandText = "PRAGMA table_info(sessions);";
+        await using var reader = await inspect.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase)) return;
+        await reader.DisposeAsync();
+        await using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE sessions ADD COLUMN {columnName} {definition};";
+        await alter.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async ValueTask MigrateLegacyCoursesAsync(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO courses(id, name, created_at, is_archived)
+            SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-a' || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))),
+                   trim(course_name), min(started_at), 0
+            FROM sessions WHERE course_id IS NULL GROUP BY trim(course_name);
+            UPDATE sessions SET course_id=(SELECT id FROM courses WHERE name=trim(sessions.course_name) COLLATE NOCASE ORDER BY created_at LIMIT 1)
+            WHERE course_id IS NULL;
+            """;
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async ValueTask EnsureTranscriptColumnAsync(
+        SqliteConnection connection,
+        string columnName,
+        string definition,
+        CancellationToken cancellationToken)
+    {
+        await using var inspect = connection.CreateCommand();
+        inspect.CommandText = "PRAGMA table_info(transcripts);";
+        await using var reader = await inspect.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        await reader.DisposeAsync();
+        await using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE transcripts ADD COLUMN {columnName} {definition};";
+        await alter.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static Session ReadSession(SqliteDataReader reader) => new(
+        Guid.Parse(reader.GetString(0)), reader.GetString(1), Parse(reader.GetString(2)),
+        reader.IsDBNull(3) ? null : Parse(reader.GetString(3)), (SessionStatus)reader.GetInt32(4))
+    {
+        CourseId = reader.IsDBNull(5) ? null : Guid.Parse(reader.GetString(5)),
+        MaterialPath = reader.IsDBNull(6) ? null : reader.GetString(6),
+        MaterialType = reader.IsDBNull(7) ? null : reader.GetString(7),
+        StudyPackPath = reader.IsDBNull(8) ? null : reader.GetString(8),
+        LessonKey = reader.IsDBNull(9) ? null : reader.GetString(9),
+        LastSlidePage = reader.IsDBNull(10) ? null : reader.GetInt32(10)
+    };
+
+    private static string Format(DateTimeOffset value) => value.ToString("O", CultureInfo.InvariantCulture);
+
+    private static DateTimeOffset Parse(string value) =>
+        DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+}
