@@ -1,13 +1,33 @@
 using System.Text;
 using ClassInterpreter.ClassroomServer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<ClassroomStore>();
 builder.Services.AddSingleton<SchoolQwenService>();
 builder.Services.AddSignalR();
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true).AllowCredentials()));
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    // The container is reachable only through Caddy on the private Docker network.
+    // Trust that single proxy hop so rate limiting sees the real client address.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+// 浏览器跨域策略：配置了 Classroom:AllowedOrigins（分号分隔）时只放行白名单并允许凭据；
+// 未配置时放行任意来源但不允许凭据——“任意来源 + 凭据”的组合会让任何网页都能带着
+// 用户身份调用本服务，绝不能再回到那种配置。桌面客户端不走浏览器，不受影响。
+var allowedOrigins = (builder.Configuration["Classroom:AllowedOrigins"] ?? string.Empty)
+    .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+{
+    if (allowedOrigins.Length > 0) policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    else policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+}));
 var app = builder.Build();
+app.UseForwardedHeaders();
 app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -105,12 +125,33 @@ app.MapPost("/api/teacher/lessons/{lessonId:guid}/end", async (Guid lessonId, Ht
     return Results.Ok(new { message = "课堂已结束，学生将不能再加入" });
 });
 
-app.MapPost("/api/classrooms/join", async (ClassroomJoinRequest request) =>
+var joinLimiter = new SlidingWindowRateLimiter(
+    maxRequests: builder.Configuration.GetValue("Classroom:JoinRateLimitPerMinute", 150),
+    window: TimeSpan.FromMinutes(1));
+var maxParticipants = builder.Configuration.GetValue("Classroom:MaxParticipantsPerLesson", 300);
+var activeParticipantWindow = TimeSpan.FromSeconds(
+    builder.Configuration.GetValue("Classroom:ActiveParticipantWindowSeconds", 90));
+var joinGate = new SemaphoreSlim(1, 1);
+app.MapPost("/api/classrooms/join", async (ClassroomJoinRequest request, HttpContext context) =>
 {
-    var lesson = await store.FindLessonByCodeAsync(request.ClassroomCode.Trim());
-    if (lesson is null) return Results.NotFound(new { error = "课堂码不存在或课堂已结束" });
-    var participant = await store.JoinAsync(lesson.Id);
-    return Results.Ok(new ClassroomJoinResult(lesson.Id, lesson.CourseName, lesson.Name, participant.Token, DateTimeOffset.UtcNow));
+    var classroomCode = request.ClassroomCode.Trim();
+    var clientKey = $"{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}:{classroomCode}";
+    if (!joinLimiter.TryAcquire(clientKey, DateTimeOffset.UtcNow))
+        return Results.Problem("加入过于频繁，请稍后再试", statusCode: 429);
+    await joinGate.WaitAsync(context.RequestAborted);
+    try
+    {
+        var lesson = await store.FindLessonByCodeAsync(classroomCode);
+        if (lesson is null) return Results.NotFound(new { error = "课堂码不存在或课堂已结束" });
+        if (await store.CountActiveParticipantsAsync(lesson.Id, activeParticipantWindow) >= maxParticipants)
+            return Results.Problem("课堂当前在线人数已满", statusCode: 429);
+        var participant = await store.JoinAsync(lesson.Id);
+        return Results.Ok(new ClassroomJoinResult(lesson.Id, lesson.CourseName, lesson.Name, participant.Token, DateTimeOffset.UtcNow));
+    }
+    finally
+    {
+        joinGate.Release();
+    }
 });
 app.MapPost("/api/classrooms/{lessonId:guid}/heartbeat", async (Guid lessonId, HttpRequest http) => await Participant(http, lessonId) is not null ? Results.Ok() : Results.Unauthorized());
 app.MapGet("/api/classrooms/{lessonId:guid}/snapshot", async (Guid lessonId, HttpRequest http) => await Participant(http, lessonId) is not null ? Results.Ok(await store.SnapshotAsync(lessonId)) : Results.Unauthorized());
@@ -147,7 +188,14 @@ async Task<Guid?> Participant(HttpRequest request, Guid lessonId) => await store
 async Task BroadcastSnapshot(Guid lessonId, IHubContext<ClassroomHub> hub) => await hub.Clients.Group($"lesson:{lessonId}").SendAsync("SnapshotUpdated", await store.SnapshotAsync(lessonId));
 static string Bearer(HttpRequest r) => r.Headers.Authorization.ToString().Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
 static bool CryptographicEquals(string a, string b) => System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(a), Encoding.UTF8.GetBytes(b));
-static string Csv(string? value) => $"\"{(value ?? string.Empty).Replace("\"", "\"\"")}\"";
+static string Csv(string? value)
+{
+    var text = (value ?? string.Empty).Replace("\"", "\"\"");
+    // 学生提问以 = + - @ 或制表符开头时，Excel 会把单元格当公式执行；加单引号前缀让它保持纯文本。
+    if (text.Length > 0 && text[0] is '=' or '+' or '-' or '@' or '\t' or '\r')
+        text = $"'{text}";
+    return $"\"{text}\"";
+}
 
 public sealed record SetupCourseRequest(string Name, string Password, string BootstrapKey);
 public sealed record TeacherLoginRequest(string CourseName, string Password);
